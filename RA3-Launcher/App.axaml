@@ -1,0 +1,15 @@
+<Application xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:sys="using:System"
+			 x:Class="RA3_Launcher.App"
+			 xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+			 RequestedThemeVariant="Default">
+
+	<Application.Styles>
+
+		<StyleInclude Source="avares://Avalonia.Themes.Fluent/FluentTheme.axaml"/>
+
+		<husk:HuskuiTheme Accent="System" />
+
+	</Application.Styles>
+</Application>

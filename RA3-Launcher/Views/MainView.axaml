@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="clr-namespace:RA3_Launcher.ViewModels"
+			 xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:fi="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+			 x:Class="RA3_Launcher.Views.MainView"
+			 x:DataType="vm:MainViewModel">
+
+	<Design.DataContext>
+		<vm:MainViewModel />
+	</Design.DataContext>
+
+	<Grid RowDefinitions="*, Auto">
+		<!-- Фоновая иллюстрация (по умолчанию) -->
+		<Rectangle Grid.Row="0" Fill="{DynamicResource ThemeBackgroundBrush}" />
+
+		<!-- Верхняя панель с информацией -->
+		<StackPanel Grid.Row="0"
+					Orientation="Horizontal"
+					HorizontalAlignment="Right"
+					VerticalAlignment="Top"
+					Margin="20,20,20,0">
+			<TextBlock Text="{Binding CurrentVersion}"
+					   FontWeight="SemiBold"
+					   FontSize="14" />
+		</StackPanel>
+
+		<!-- Нижняя панель с кнопками и выбором мода -->
+		<StackPanel Grid.Row="1"
+					MinWidth="400"
+					MaxWidth="500"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Bottom"
+					Margin="0,0,0,30"
+					Spacing="20">
+
+			<!-- Верхняя строка: кнопки -->
+			<StackPanel Orientation="Horizontal"
+						HorizontalAlignment="Center"
+						Spacing="15">
+
+				<!-- Settings Button -->
+				<Button Classes="Primary"
+						Command="{Binding OpenSettingsCommand}"
+						Width="48"
+						Height="48"
+						Theme="{StaticResource OutlineButtonTheme}">
+					<fi:SymbolIcon Symbol="Settings"
+								   Height="20"
+								   Width="20" />
+				</Button>
+
+				<!-- Launch Game Button -->
+				<Button Classes="Primary"
+						Command="{Binding LaunchGameCommand}"
+						Content="Launch Game"
+						Width="160"
+						Height="48"
+						Theme="{StaticResource OutlineButtonTheme}"
+						FontSize="14"
+						FontWeight="SemiBold" />
+
+				<!-- Mods Button -->
+				<Button Classes="Primary"
+						Command="{Binding OpenModsCommand}"
+						Width="48"
+						Height="48"
+						Theme="{StaticResource OutlineButtonTheme}">
+					<fi:SymbolIcon Symbol="WrenchScrewdriver"
+								   Height="20"
+								   Width="20" />
+				</Button>
+			</StackPanel>
+
+			<!-- Нижняя строка: выбор мода -->
+			<Grid ColumnDefinitions="Auto, *" ColumnSpacing="15">
+				<TextBlock Grid.Column="0"
+						   Text="Select Mod"
+						   FontWeight="SemiBold"
+						   FontSize="14"
+						   VerticalAlignment="Center" />
+
+				<ComboBox Grid.Column="1"
+						  HorizontalContentAlignment="Left"
+						  VerticalContentAlignment="Center"
+						  ItemsSource="{Binding AvailableMods}"
+						  SelectedItem="{Binding SelectedMod}"
+						  DisplayMemberBinding="{Binding NameAndVersion}"
+						  MinWidth="150"
+						  Height="40"
+						  HorizontalAlignment="Stretch" />
+			</Grid>
+
+		</StackPanel>
+	</Grid>
+</UserControl>

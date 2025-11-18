@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RA3-Launcher.Desktop/RA3-Launcher.Desktop.csproj" />
+  <Project Path="RA3-Launcher/RA3-Launcher.csproj" />
+</Solution>

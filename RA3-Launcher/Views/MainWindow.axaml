@@ -1,0 +1,20 @@
+<husk:AppWindow xmlns="https://github.com/avaloniaui"
+				xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+				xmlns:vm="using:RA3_Launcher.ViewModels"
+				xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+				xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+				xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+				xmlns:views="clr-namespace:RA3_Launcher.Views"
+				mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+				x:Class="RA3_Launcher.Views.MainWindow"
+				Width="800"
+				Height="450"
+				Title="RA3_Launcher">
+
+	<Window.Background>
+		<ImageBrush Source="avares://RA3-Launcher/Assets/wallpaper.jpg"
+					Stretch="UniformToFill" />
+	</Window.Background>
+
+	<views:MainView />
+</husk:AppWindow>
