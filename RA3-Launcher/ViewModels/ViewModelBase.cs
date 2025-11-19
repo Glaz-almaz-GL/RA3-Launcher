@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace RA3_Launcher.ViewModels;
+namespace ViewModels;
 
 public class ViewModelBase : ObservableObject
 {

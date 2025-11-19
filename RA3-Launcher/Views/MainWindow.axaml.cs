@@ -1,5 +1,5 @@
 ﻿using Huskui.Avalonia.Controls;
-using RA3_Launcher.Managers;
+using Managers;
 using RA3_Launcher.ViewModels;
 using System;
 
@@ -11,6 +11,7 @@ public partial class MainWindow : AppWindow
     {
         InitializeComponent();
         GrowlsManager.Initialize(this);
+        DialogsManager.Initialize(this, this);
         DataContextChanged += OnDataContextChanged; // Подписываемся на изменение DataContext
     }
 
@@ -20,12 +21,20 @@ public partial class MainWindow : AppWindow
         {
             viewModel.OpenSettingsRequested -= OnOpenSettingsRequested;
             viewModel.OpenSettingsRequested += OnOpenSettingsRequested;
+
+            viewModel.OpenModsRequested -= OnOpenModsRequested;
+            viewModel.OpenModsRequested += OnOpenModsRequested;
         }
     }
 
     private async void OnOpenSettingsRequested()
     {
-        SettingsPage dialog = new();
-        await dialog.ShowDialog(this); // Передаём текущее окно как родительское
+        SettingsPage settingsPage = new();
+        await settingsPage.ShowDialog(this); // Передаём текущее окно как родительское
+    }
+
+    private async void OnOpenModsRequested()
+    {
+
     }
 }

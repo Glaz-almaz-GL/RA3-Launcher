@@ -1,321 +1,352 @@
-<Window xmlns="https://github.com/avaloniaui"
-		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		xmlns:vm="clr-namespace:RA3_Launcher.ViewModels"
-		xmlns:gb="using:GroupBox.Avalonia.Controls"
-		xmlns:i="https://github.com/avaloniaui"
-		mc:Ignorable="d"
-		d:DesignWidth="500"
-		d:DesignHeight="650"
-		x:Class="RA3_Launcher.Views.SettingsPage"
-		MinWidth="550"
-		MinHeight="650"
-		MaxWidth="550"
-		MaxHeight="650"
-		Title="Настройки"
-		x:DataType="vm:SettingsViewModel"
-		Background="{DynamicResource BackgroundBrush}"
-		Foreground="{DynamicResource TextBrush}">
+<husk:AppWindow xmlns="https://github.com/avaloniaui"
+				xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+				xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+				xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+				xmlns:vm="clr-namespace:RA3_Launcher.ViewModels"
+				xmlns:gb="using:GroupBox.Avalonia.Controls"
+				xmlns:fi="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+				xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+				mc:Ignorable="d"
+				x:Class="RA3_Launcher.Views.SettingsPage"
+				MinWidth="600"
+				MinHeight="760"
+				MaxWidth="600"
+				MaxHeight="760"
+				Title="Настройки"
+				x:DataType="vm:SettingsViewModel">
 
 	<Design.DataContext>
 		<vm:SettingsViewModel />
 	</Design.DataContext>
 
-	<Border Background="{DynamicResource BackgroundBrush}"
-			BorderBrush="{DynamicResource BorderBrush}"
-			BorderThickness="1"
-			CornerRadius="12">
+	<Window.Background>
+		<ImageBrush Source="avares://RA3-Launcher/Assets/wallpaper.jpg"
+					Stretch="UniformToFill" />
+	</Window.Background>
+
+	<husk:Card CornerRadius="0"  BorderThickness="1">
 		<ScrollViewer Padding="20"
 					  VerticalScrollBarVisibility="Auto">
 			<StackPanel Spacing="24" Orientation="Vertical">
 
 				<!-- Header -->
 				<TextBlock Text="Настройки"
-						   FontSize="24"
-						   FontWeight="Bold"
-						   Foreground="{DynamicResource AccentBrush}"
+						   FontSize="{StaticResource LargeFontSize}"
+						   FontWeight="{StaticResource ControlStrongFontWeight}"
+						   Foreground="{StaticResource ControlAccentInteractiveBackgroundBrush}"
 						   HorizontalAlignment="Center"
-						   Margin="0,0,0,10"/>
+						   Margin="0,0,0,10"
+						   TextDecorations="Underline">
+				</TextBlock>
 
 				<!-- Launch Options Section -->
-				<Border Theme="{StaticResource CardBorderStyle}" Padding="16">
-					<StackPanel Spacing="12">
-						<TextBlock Text="Параметры запуска"
-								   FontWeight="SemiBold"
-								   FontSize="16"
-								   Foreground="{DynamicResource HeaderBrush}"/>
-
-						<TextBox Name="LaunchOptionsTextBox"
-								 Text="{Binding LaunchOptions, Mode=TwoWay}"
-								 Watermark="Введите параметры запуска, например, -windowed -res 1280x720"
-								 FontSize="13"
-								 Padding="12,10"
-								 Background="{DynamicResource InputBackgroundBrush}"
-								 BorderBrush="{DynamicResource InputBorderBrush}"
-								 BorderThickness="1"
-								 CornerRadius="6"
-								 Foreground="{DynamicResource TextBrush}"/>
-					</StackPanel>
-				</Border>
+				<husk:Card MaxWidth="558" CornerRadius="12" Margin="0,0,0,12">
+					<husk:Card.Content>
+						<StackPanel Spacing="8">
+							<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"> <!-- Новый StackPanel для иконки и текста -->
+							<fi:SymbolIcon Symbol="Play"
+										   Width="16"
+										   Height="16"
+										   FontSize="16"
+										   VerticalAlignment="Center"
+										   Foreground="{DynamicResource ControlAccentBrush}" /> <!-- Иконка -->
+										   <TextBlock Text="Параметры запуска"
+													  FontWeight="{StaticResource ControlStrongFontWeight}"
+													  FontSize="{StaticResource MediumFontSize}"
+													  Foreground="{DynamicResource ControlAccentBrush}" />
+							</StackPanel>
+							<!-- Остальные элементы, например, TextBox -->
+							<TextBox Name="LaunchOptionsTextBox"
+									 Text="{Binding LaunchOptions, Mode=OneWay}"
+									 Watermark="Введите параметры запуска, например, -windowed -res 1280x720"
+									 FontSize="{StaticResource SmallFontSize}"
+									 Padding="12,10"
+									 Theme="{StaticResource FieldTextBoxTheme}"
+									 UseFloatingWatermark="True"
+									 CornerRadius="6"/>
+						</StackPanel>
+					</husk:Card.Content>
+				</husk:Card>
 
 				<!-- Game Path Section -->
-				<Border Theme="{StaticResource CardBorderStyle}" Padding="16">
-					<StackPanel Spacing="12">
-						<TextBlock Text="Путь к игре"
-								   FontWeight="SemiBold"
-								   FontSize="16"
-								   Foreground="{DynamicResource HeaderBrush}"/>
+				<husk:Card MaxWidth="558">
+					<husk:Card.Content>
+						<StackPanel Spacing="8">
+							<StackPanel Spacing="8" VerticalAlignment="Center" Orientation="Horizontal">
+								<fi:SymbolIcon Symbol="TextAlignDistributed"
+											   Width="16"
+											   Height="16"
+											   FontSize="16"
+											   VerticalAlignment="Center"
+											   Foreground="{DynamicResource ControlAccentBrush}" />
+								<TextBlock Text="Путь к игре"
+										   FontWeight="{StaticResource ControlStrongFontWeight}"
+										   FontSize="{StaticResource MediumFontSize}"
+										   Foreground="{StaticResource ControlPrimaryForegroundBrush}"/>
+							</StackPanel>
 
-						<Grid ColumnDefinitions="*, Auto" RowSpacing="8">
-							<TextBox Name="GamePathTextBox"
-									 Text="{Binding GamePath, Mode=TwoWay}"
-									 Watermark="C:\Games\Red Alert 3\ra3.exe"
-									 FontSize="13"
-									 Padding="12,10"
-									 Background="{DynamicResource InputBackgroundBrush}"
-									 BorderBrush="{DynamicResource InputBorderBrush}"
-									 BorderThickness="1"
-									 CornerRadius="6"
-									 Foreground="{DynamicResource TextBrush}"/>
-							<Button Name="BrowseGamePathButton"
-									Grid.Column="1"
-									Margin="12,0,0,0"
-									Content="Обзор..."
-									Classes="Primary"
-									Padding="16,8"
-									CornerRadius="6"/>
-						</Grid>
-					</StackPanel>
-				</Border>
+							<Grid ColumnDefinitions="*, Auto" RowSpacing="8">
+								<TextBox Name="GamePathTextBox"
+										 Text="{Binding GamePath, Mode=TwoWay}"
+										 Watermark="C:\Games\Red Alert 3\ra3.exe"
+										 FontSize="{StaticResource SmallFontSize}"
+										 Padding="12,10"
+										 Theme="{StaticResource FieldTextBoxTheme}"
+										 TextWrapping="NoWrap"
+										 UseFloatingWatermark="True"/>
+								<Button Name="BrowseGamePathButton"
+										Grid.Column="1"
+										Margin="12,0,0,0"
+										Content="Обзор..."
+										Command="{Binding BrowseGamePathCommand}"
+										Classes="Primary"
+										Padding="16,8"
+										CornerRadius="6"/>
+							</Grid>
+						</StackPanel>
+					</husk:Card.Content>
+				</husk:Card>
 
 				<!-- Additional Tools Section -->
-				<Border Theme="{StaticResource CardBorderStyle}" Padding="16">
-					<StackPanel Spacing="12">
-						<TextBlock Text="Дополнительные инструменты"
-								   FontWeight="SemiBold"
-								   FontSize="16"
-								   Foreground="{DynamicResource HeaderBrush}"/>
+				<husk:Card>
+					<husk:Card.Content>
+						<StackPanel Spacing="8">
+							<StackPanel Spacing="8" VerticalAlignment="Center" Orientation="Horizontal">
+								<fi:SymbolIcon Symbol="Toolbox"
+											   Width="16"
+											   Height="16"
+											   FontSize="16"
+											   VerticalAlignment="Center"
+											   Foreground="{DynamicResource ControlAccentBrush}" />
+								<TextBlock Text="Дополнительные инструменты"
+										   FontWeight="{StaticResource ControlStrongFontWeight}"
+										   FontSize="{StaticResource MediumFontSize}"
+										   Foreground="{StaticResource ControlPrimaryForegroundBrush}"/>
+							</StackPanel>
 
-						<UniformGrid Columns="2" RowSpacing="12" ColumnSpacing="12">
-							<!-- 4GB Patch Button with Info -->
-							<Border Background="{DynamicResource InputBackgroundBrush}"
-									CornerRadius="6"
-									Padding="4">
-								<DockPanel>
+							<UniformGrid Columns="2" RowSpacing="12" ColumnSpacing="12">
+								<!-- 4GB Patch Button with Info -->
+								<Grid ColumnDefinitions="*,Auto" ColumnSpacing="2">
 									<Button Name="Apply4GBPatchButton"
+											Command="{Binding Apply4GBPatchCommand}"
+											Theme="{StaticResource OutlineButtonTheme}"
+											CornerRadius="4,0,0,4"
 											Content="4GB Patch"
 											Classes="Primary"
-											Padding="8,10"
-											CornerRadius="4"
 											HorizontalAlignment="Stretch"
-											DockPanel.Dock="Left"
-											HorizontalContentAlignment="Left"
-											Margin="0,0,4,0"/>
-									<Button Classes="Ghost"
-											DockPanel.Dock="Right"
-											Padding="6,2"
-											CornerRadius="4"
-											Background="Transparent"
-											BorderThickness="0">
-										<TextBlock Text="?"
-												   FontSize="10"
-												   FontWeight="Bold"
-												   VerticalAlignment="Center"
-												   HorizontalAlignment="Center"
-												   Foreground="{DynamicResource AccentBrush}"/>
+											HorizontalContentAlignment="Center"/>
+									<Button Theme="{StaticResource OutlineButtonTheme}" CornerRadius="0,4,4,0" Classes="Primary" Grid.Column="1" Padding="4" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
 										<ToolTip.Tip>
-											<TextBlock Text="{Binding FourGBPatchDescriptionProperty}"
+											<TextBlock Text="Увеличивает доступную память для 32-битных приложений до 4 ГБ, что может улучшить стабильность и производительность Red Alert 3."
 													   TextWrapping="Wrap"
 													   MaxWidth="250"/>
 										</ToolTip.Tip>
+										<fi:SymbolIcon
+										Symbol="Info"
+										Width="13"
+										FontSize="13"
+										Classes="Primary">
+										</fi:SymbolIcon>
 									</Button>
-								</DockPanel>
-							</Border>
+								</Grid>
 
-							<!-- Fix Registry Button with Info -->
-							<Border Background="{DynamicResource InputBackgroundBrush}"
-									CornerRadius="6"
-									Padding="4">
-								<DockPanel>
+								<!-- Fix Registry Button with Info -->
+								<Grid ColumnDefinitions="*,Auto" ColumnSpacing="2">
 									<Button Name="FixRegistryButton"
+											Command="{Binding FixRegistryCommand}"
+											Theme="{StaticResource OutlineButtonTheme}"
+											CornerRadius="4,0,0,4"
 											Content="Фикс реестра"
 											Classes="Primary"
-											Padding="8,10"
-											CornerRadius="4"
 											HorizontalAlignment="Stretch"
-											DockPanel.Dock="Left"
-											HorizontalContentAlignment="Left"
-											Margin="0,0,4,0"/>
-									<Button Classes="Ghost"
-											DockPanel.Dock="Right"
-											Padding="6,2"
-											CornerRadius="4"
-											Background="Transparent"
-											BorderThickness="0">
-										<TextBlock Text="?"
-												   FontSize="10"
-												   FontWeight="Bold"
-												   VerticalAlignment="Center"
-												   HorizontalAlignment="Center"
-												   Foreground="{DynamicResource AccentBrush}"/>
+											HorizontalContentAlignment="Center"/>
+									<Button CornerRadius="0,4,4,0"
+											Classes="Primary"
+											Theme="{StaticResource OutlineButtonTheme}"
+											Grid.Column="1"
+											Padding="4"
+											HorizontalContentAlignment="Center"
+											VerticalContentAlignment="Center">
 										<ToolTip.Tip>
-											<TextBlock Text="{Binding RegistryFixDescriptionProperty}"
+											<TextBlock Text="Исправляет проблемы с реестром Windows, которые могут мешать работе игры Red Alert 3, решает ошиюку &quot;There is a problem with the registry of the game, please fix the registry of Red Alert 3 first and then try again.&quot;, также полезно если ваш Red Alert 3 не видит установленные карты."
 													   TextWrapping="Wrap"
 													   MaxWidth="250"/>
 										</ToolTip.Tip>
+										<fi:SymbolIcon Symbol="Info"
+													   Width="13"
+													   FontSize="13"
+													   Classes="Primary"/>
 									</Button>
-								</DockPanel>
-							</Border>
+								</Grid>
 
-							<!-- BattleNet Button with Info -->
-							<Border Background="{DynamicResource InputBackgroundBrush}"
-									CornerRadius="6"
-									Padding="4">
-								<DockPanel>
+								<!-- BattleNet Button with Info -->
+								<Grid ColumnDefinitions="*,Auto" ColumnSpacing="2">
 									<Button Name="InstallBattleNetButton"
+											Command="{Binding InstallBattleNetCommand}"
+											CornerRadius="4,0,0,4"
+											Theme="{StaticResource OutlineButtonTheme}"
 											Content="BattleNet"
 											Classes="Primary"
-											Padding="8,10"
-											CornerRadius="4"
 											HorizontalAlignment="Stretch"
-											DockPanel.Dock="Left"
-											HorizontalContentAlignment="Left"
-											Margin="0,0,4,0"/>
-									<Button Classes="Ghost"
-											DockPanel.Dock="Right"
-											Padding="6,2"
-											CornerRadius="4"
-											Background="Transparent"
-											BorderThickness="0">
-										<TextBlock Text="?"
-												   FontSize="10"
-												   FontWeight="Bold"
-												   VerticalAlignment="Center"
-												   HorizontalAlignment="Center"
-												   Foreground="{DynamicResource AccentBrush}"/>
+											HorizontalContentAlignment="Center"/>
+									<Button CornerRadius="0,4,4,0"
+											Classes="Primary"
+											Theme="{StaticResource OutlineButtonTheme}"
+											Grid.Column="1"
+											Padding="4"
+											HorizontalContentAlignment="Center"
+											VerticalContentAlignment="Center">
 										<ToolTip.Tip>
-											<TextBlock Text="{Binding BattleNetDescriptionProperty}"
+											<TextBlock Text="Устанавливает RA3 BattleNet, позволяя играть онлайн с другими игроками."
 													   TextWrapping="Wrap"
 													   MaxWidth="250"/>
 										</ToolTip.Tip>
+										<fi:SymbolIcon Symbol="Info"
+													   Width="13"
+													   FontSize="13"
+													   Classes="Primary"/>
 									</Button>
-								</DockPanel>
-							</Border>
+								</Grid>
 
-							<!-- CnC Online Button with Info -->
-							<Border Background="{DynamicResource InputBackgroundBrush}"
-									CornerRadius="6"
-									Padding="4">
-								<DockPanel>
+								<!-- CnC Online Button with Info -->
+								<Grid ColumnDefinitions="*,Auto" ColumnSpacing="2">
 									<Button Name="InstallCnCOnlineButton"
+											Command="{Binding InstallCnCOnlineCommand}"
+											CornerRadius="4,0,0,4"
 											Content="CnC Online"
+											Theme="{StaticResource OutlineButtonTheme}"
 											Classes="Primary"
-											Padding="8,10"
-											CornerRadius="4"
 											HorizontalAlignment="Stretch"
-											DockPanel.Dock="Left"
-											HorizontalContentAlignment="Left"
-											Margin="0,0,4,0"/>
-									<Button Classes="Ghost"
-											DockPanel.Dock="Right"
-											Padding="6,2"
-											CornerRadius="4"
-											Background="Transparent"
-											BorderThickness="0">
-										<TextBlock Text="?"
-												   FontSize="10"
-												   FontWeight="Bold"
-												   VerticalAlignment="Center"
-												   HorizontalAlignment="Center"
-												   Foreground="{DynamicResource AccentBrush}"/>
+											HorizontalContentAlignment="Center"/>
+									<Button CornerRadius="0,4,4,0"
+											Classes="Primary"
+											Grid.Column="1"
+											Theme="{StaticResource OutlineButtonTheme}"
+											Padding="4"
+											HorizontalContentAlignment="Center"
+											VerticalContentAlignment="Center">
 										<ToolTip.Tip>
-											<TextBlock Text="{Binding CnCOnlineDescriptionProperty}"
+											<TextBlock Text="Устанавливает модуль подключения к CnC Online, альтернативной платформе для многопользовательской игры."
 													   TextWrapping="Wrap"
 													   MaxWidth="250"/>
 										</ToolTip.Tip>
+										<fi:SymbolIcon Symbol="Info"
+													   Width="13"
+													   FontSize="13"
+													   Classes="Primary"/>
 									</Button>
-								</DockPanel>
-							</Border>
+								</Grid>
 
-							<!-- Radmin VPN Button with Info -->
-							<Border Background="{DynamicResource InputBackgroundBrush}"
-									CornerRadius="6"
-									Padding="4">
-								<DockPanel>
+								<!-- Radmin VPN Button with Info -->
+								<Grid ColumnDefinitions="*,Auto" ColumnSpacing="2">
 									<Button Name="InstallRadminVPNButton"
+											Command="{Binding InstallRadminVPNCommand}"
+											CornerRadius="4,0,0,4"
 											Content="Radmin VPN"
+											Theme="{StaticResource OutlineButtonTheme}"
 											Classes="Primary"
-											Padding="8,10"
-											CornerRadius="4"
 											HorizontalAlignment="Stretch"
-											DockPanel.Dock="Left"
-											HorizontalContentAlignment="Left"
-											Margin="0,0,4,0"/>
-									<Button Classes="Ghost"
-											DockPanel.Dock="Right"
-											Padding="6,2"
-											CornerRadius="4"
-											Background="Transparent"
-											BorderThickness="0">
-										<TextBlock Text="?"
-												   FontSize="10"
-												   FontWeight="Bold"
-												   VerticalAlignment="Center"
-												   HorizontalAlignment="Center"
-												   Foreground="{DynamicResource AccentBrush}"/>
+											HorizontalContentAlignment="Center"/>
+									<Button CornerRadius="0,4,4,0"
+											Classes="Primary"
+											Grid.Column="1"
+											Theme="{StaticResource OutlineButtonTheme}"
+											Padding="4"
+											HorizontalContentAlignment="Center"
+											VerticalContentAlignment="Center">
 										<ToolTip.Tip>
-											<TextBlock Text="{Binding RadminVPNDescriptionProperty}"
+											<TextBlock Text="Устанавливает Radmin VPN, позволяющий создавать виртуальную локальную сеть для игры по LAN."
 													   TextWrapping="Wrap"
 													   MaxWidth="250"/>
 										</ToolTip.Tip>
+										<fi:SymbolIcon Symbol="Info"
+													   Width="13"
+													   FontSize="13"
+													   Classes="Primary"/>
 									</Button>
-								</DockPanel>
-							</Border>
-						</UniformGrid>
-					</StackPanel>
-				</Border>
+								</Grid>
+
+								<!-- Generate CD Key Button with Info -->
+								<Grid ColumnDefinitions="*,Auto" ColumnSpacing="2">
+									<Button Name="GenerateCDKeyButton"
+											Command="{Binding GenerateCDKeyCommand}"
+											CornerRadius="4,0,0,4"
+											Content="Сгенерировать новый CD-Ключ"
+											Theme="{StaticResource OutlineButtonTheme}"
+											Classes="Primary"
+											HorizontalAlignment="Stretch"
+											HorizontalContentAlignment="Center"/>
+									<Button CornerRadius="0,4,4,0"
+											Classes="Primary"
+											Grid.Column="1"
+											Theme="{StaticResource OutlineButtonTheme}"
+											Padding="4"
+											HorizontalContentAlignment="Center"
+											VerticalContentAlignment="Center">
+										<ToolTip.Tip>
+											<TextBlock Text="Генерирует новый CD-Ключ, который используется игрой как уникальный ID в сетевых играх, решает проблему &quot;Could not join game - your CD Key is already in use. Each player needs a unique CD Key in order to play LAN matches.&quot;"
+													   TextWrapping="Wrap"
+													   MaxWidth="250"/>
+										</ToolTip.Tip>
+										<fi:SymbolIcon Symbol="Info"
+													   Width="13"
+													   FontSize="13"
+													   Classes="Primary"/>
+									</Button>
+								</Grid>
+							</UniformGrid>
+						</StackPanel>
+					</husk:Card.Content>
+				</husk:Card>
 
 				<!-- Update Settings Section -->
-				<Border Theme="{StaticResource CardBorderStyle}" Padding="16">
-					<StackPanel Spacing="16">
-						<TextBlock Text="Настройки обновлений"
-								   FontWeight="SemiBold"
-								   FontSize="16"
-								   Foreground="{DynamicResource HeaderBrush}"/>
-
-						<StackPanel Spacing="10">
-							<CheckBox Name="CheckUpdatesForModsCheckBox"
-									  IsChecked="{Binding CheckUpdatesForMods, Mode=TwoWay}"
-									  Content="Проверять наличие обновлений модификаций при запуске"
-									  FontSize="13"
-									  Foreground="{DynamicResource TextBrush}"
-									  Background="{DynamicResource InputBackgroundBrush}"
-									  BorderBrush="{DynamicResource InputBorderBrush}"/>
-							<CheckBox Name="CheckUpdatesForAppCheckBox"
-									  IsChecked="{Binding CheckUpdatesForApp, Mode=TwoWay}"
-									  Content="Проверять наличие обновлений лаунчера при запуске"
-									  FontSize="13"
-									  Foreground="{DynamicResource TextBrush}"
-									  Background="{DynamicResource InputBackgroundBrush}"
-									  BorderBrush="{DynamicResource InputBorderBrush}"/>
+				<husk:Card>
+					<husk:Card.Content>
+						<StackPanel Spacing="8">
+							<StackPanel Spacing="8" VerticalAlignment="Center" Orientation="Horizontal">
+								<fi:SymbolIcon Symbol="ArrowClockwise"
+											   Width="16"
+											   Height="16"
+											   FontSize="16"
+											   VerticalAlignment="Center"
+											   Foreground="{DynamicResource ControlAccentBrush}" />
+								<TextBlock Text="Настройки обновлений"
+										   FontWeight="{StaticResource ControlStrongFontWeight}"
+										   FontSize="{StaticResource MediumFontSize}"
+										   Foreground="{StaticResource ControlPrimaryForegroundBrush}"/>
+							</StackPanel>
+							<StackPanel Spacing="10">
+								<CheckBox Name="CheckUpdatesForModsCheckBox"
+										  IsChecked="{Binding CheckUpdatesForMods, Mode=TwoWay}"
+										  Content="Проверять наличие обновлений модификаций при запуске"
+										  FontSize="{StaticResource SmallFontSize}"
+										  Foreground="{StaticResource ControlPrimaryForegroundBrush}"
+										  Theme="{StaticResource GhostToggleButtonTheme}"/>
+								<CheckBox Name="CheckUpdatesForAppCheckBox"
+										  IsChecked="{Binding CheckUpdatesForApp, Mode=TwoWay}"
+										  Content="Проверять наличие обновлений лаунчера при запуске"
+										  FontSize="{StaticResource SmallFontSize}"
+										  Foreground="{StaticResource ControlPrimaryForegroundBrush}"
+										  Theme="{StaticResource GhostToggleButtonTheme}"/>
+							</StackPanel>
 						</StackPanel>
-					</StackPanel>
-				</Border>
+					</husk:Card.Content>
+				</husk:Card>
 
 				<!-- Save Button -->
 				<Button Name="SaveSettingsButton"
 						Content="Сохранить настройки"
+						Command="{Binding SaveSettingsCommand}"
 						Classes="Primary"
 						HorizontalAlignment="Stretch"
 						Margin="0,10,0,0"
 						Height="50"
-						FontSize="15"
-						FontWeight="SemiBold"
+						FontSize="{StaticResource MediumFontSize}"
+						FontWeight="{StaticResource ControlStrongFontWeight}"
 						CornerRadius="8"
 						Padding="16,0"/>
 
 			</StackPanel>
 		</ScrollViewer>
-	</Border>
-</Window>
+	</husk:Card>
+</husk:AppWindow>

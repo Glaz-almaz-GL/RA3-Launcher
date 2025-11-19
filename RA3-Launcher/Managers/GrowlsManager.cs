@@ -1,12 +1,8 @@
 ﻿using Huskui.Avalonia.Controls;
 using Huskui.Avalonia.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace RA3_Launcher.Managers
+namespace Managers
 {
     public static class GrowlsManager
     {
@@ -41,7 +37,7 @@ namespace RA3_Launcher.Managers
 
         public static GrowlItem? ShowErrorMsg(Exception ex, string? title)
         {
-            var errorMessage = ex.Message + (ex.InnerException?.Message ?? "");
+            string errorMessage = ex.Message + (ex.InnerException?.Message ?? "");
             return ShowGrowlMsg(GrowlLevel.Danger, title, errorMessage);
         }
 
@@ -63,7 +59,7 @@ namespace RA3_Launcher.Managers
                 return null;
             }
 
-            var growlItem = new GrowlItem
+            GrowlItem growlItem = new()
             {
                 Level = growlLevel,
                 Title = GetDefaultTitle(growlLevel, title),
@@ -79,17 +75,16 @@ namespace RA3_Launcher.Managers
         #region Приватные помощники
         private static string GetDefaultTitle(GrowlLevel level, string? customTitle = null)
         {
-            if (!string.IsNullOrWhiteSpace(customTitle))
-                return customTitle;
-
-            return level switch
-            {
-                GrowlLevel.Information => "Информация",
-                GrowlLevel.Success => "Успех",
-                GrowlLevel.Warning => "Предупреждение",
-                GrowlLevel.Danger => "Ошибка",
-                _ => "Сообщение"
-            };
+            return !string.IsNullOrWhiteSpace(customTitle)
+                ? customTitle
+                : level switch
+                {
+                    GrowlLevel.Information => "Информация",
+                    GrowlLevel.Success => "Успех",
+                    GrowlLevel.Warning => "Предупреждение",
+                    GrowlLevel.Danger => "Ошибка",
+                    _ => "Сообщение"
+                };
         }
         #endregion
     }

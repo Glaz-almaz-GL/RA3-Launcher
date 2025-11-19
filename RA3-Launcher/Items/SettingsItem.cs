@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
-namespace RA3_Launcher.Items
+namespace Items
 {
     public class SettingsItem
     {
@@ -14,7 +8,7 @@ namespace RA3_Launcher.Items
         public string GamePath { get; set; } = string.Empty;
 
         [JsonPropertyName("launchOptions")]
-        public string[] LaunchOptions { get; set; } = [];
+        public string LaunchOptions { get; set; } = string.Empty;
 
         [JsonPropertyName("checkUpdatesForMods")]
         public bool CheckUpdatesForMods { get; set; } = true;
@@ -22,9 +16,9 @@ namespace RA3_Launcher.Items
         [JsonPropertyName("checkUpdatesForApp")]
         public bool CheckUpdatesForApp { get; set; } = true;
 
-        public SettingsItem(string rA3Path, string[] launchOptions, bool checkUpdatesForMods, bool checkUpdatesForApp)
+        public SettingsItem(string gamePath, string launchOptions, bool checkUpdatesForMods, bool checkUpdatesForApp)
         {
-            GamePath = rA3Path;
+            GamePath = gamePath;
             LaunchOptions = launchOptions;
             CheckUpdatesForMods = checkUpdatesForMods;
             CheckUpdatesForApp = checkUpdatesForApp;

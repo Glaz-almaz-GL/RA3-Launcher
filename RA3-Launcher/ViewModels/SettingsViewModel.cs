@@ -1,47 +1,139 @@
-﻿using RA3_Launcher.Managers;
-using RA3_Launcher.ViewModels;
+﻿using Avalonia.Platform.Storage;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Items;
+using Managers;
+using RA3_Launcher.Managers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ViewModels;
 
 namespace RA3_Launcher.ViewModels
 {
-    public class SettingsViewModel : ViewModelBase
+    public partial class SettingsViewModel : ViewModelBase
     {
         [JsonIgnore]
-        public string LaunchOptions { get; set; } = string.Join(" ", SettingsManager.CurrentSettings.LaunchOptions) ?? string.Empty;
+        [ObservableProperty]
+        private string _launchOptions = SettingsManager.CurrentSettings.LaunchOptions ?? string.Empty;
 
         [JsonIgnore]
-        public string GamePath { get; set; } = SettingsManager.CurrentSettings.GamePath;
+        [ObservableProperty]
+        private string _gamePath = SettingsManager.CurrentSettings.GamePath;
 
         [JsonIgnore]
-        public bool CheckUpdatesForMods { get; set; } = SettingsManager.CurrentSettings.CheckUpdatesForMods;
+        [ObservableProperty]
+        private bool _checkUpdatesForMods = SettingsManager.CurrentSettings.CheckUpdatesForMods;
 
         [JsonIgnore]
-        public bool CheckUpdatesForApp { get; set; } = SettingsManager.CurrentSettings.CheckUpdatesForApp;
+        [ObservableProperty]
+        private bool _checkUpdatesForApp = SettingsManager.CurrentSettings.CheckUpdatesForApp;
 
-        public const string FourGBPatchDescription = "Увеличивает доступную память для 32-битных приложений до 4 ГБ, что может улучшить стабильность игры Red Alert 3.";
-        public const string RegistryFixDescription = "Исправляет проблемы с реестром Windows, которые могут мешать работе игры Red Alert 3, также полезно если ваш Red Alert 3 не видит установленные карты.";
-        public const string BattleNetDescription = "Устанавливает RA3 BattleNet, позволяя играть онлайн с другими игроками.";
-        public const string CncOnlineDescription = "Устанавливает модуль подключения к CnC Online, альтернативной платформе для многопользовательской игры.";
-        public const string RadminVPNDescription = "Устанавливает Radmin VPN, позволяющий создавать виртуальную локальную сеть для игры по LAN.";
+        [RelayCommand]
+        private async Task BrowseGamePath()
+        {
+            var file = await DialogsManager.ShowOpenSingleFileDialogAsync("Выберите исполняемый файл RA3", ["*.exe"]);
 
-        [JsonIgnore]
-        public static string FourGBPatchDescriptionProperty => FourGBPatchDescription;
+            if (file != null)
+            {
+                string? filePath = file.TryGetLocalPath();
 
-        [JsonIgnore]
-        public static string RegistryFixDescriptionProperty => RegistryFixDescription;
+                if (!string.IsNullOrWhiteSpace(filePath))
+                {
+                    GamePath = filePath;
+                }
+                else if (file.Path.AbsolutePath != null)
+                {
+                    GamePath = file.Path.AbsolutePath;
+                }
+            }
+        }
 
-        [JsonIgnore]
-        public static string BattleNetDescriptionProperty => BattleNetDescription;
+        [RelayCommand]
+        private void Apply4GBPatch()
+        {
+            InstallPatchManager.Install4GBPatch();
+        }
 
-        [JsonIgnore]
-        public static string CnCOnlineDescriptionProperty => CncOnlineDescription;
+        [RelayCommand]
+        private void FixRegistry()
+        {
+            RegistryManager.FixRegistry();
+        }
 
-        [JsonIgnore]
-        public static string RadminVPNDescriptionProperty => RadminVPNDescription;
+        [RelayCommand]
+        private async Task InstallBattleNet()
+        {
+            try
+            {
+                Debug.WriteLine($"Открытие ссылки в браузере: {FilePaths.RA3BattleNetUrl}");
+                // Используем Avalonia PlatformManager для открытия URI
+                Process.Start(new ProcessStartInfo(FilePaths.RA3BattleNetUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при открытии ссылки в браузере: {ex.Message}");
+                GrowlsManager.ShowErrorMsg($"Не удалось открыть браузер: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private void InstallCnCOnline()
+        {
+            try
+            {
+                Debug.WriteLine($"Открытие ссылки в браузере: {FilePaths.RA3CnCUrl}");
+                // Используем Avalonia PlatformManager для открытия URI
+                Process.Start(new ProcessStartInfo(FilePaths.RA3CnCUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при открытии ссылки в браузере: {ex.Message}");
+                GrowlsManager.ShowErrorMsg($"Не удалось открыть браузер: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private void InstallRadminVPN()
+        {
+            try
+            {
+                Debug.WriteLine($"Открытие ссылки в браузере: {FilePaths.RadminVpnUrl}");
+                // Используем Avalonia PlatformManager для открытия URI
+                Process.Start(new ProcessStartInfo(FilePaths.RadminVpnUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при открытии ссылки в браузере: {ex.Message}");
+                GrowlsManager.ShowErrorMsg($"Не удалось открыть браузер: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private void GenerateCDKey()
+        {
+            try
+            {
+                string cdKey = InstallPatchManager.GenerateCDKey();
+                bool success = InstallPatchManager.ApplyCDKey(cdKey);
+
+                if (success)
+                {
+                    GrowlsManager.ShowInfoMsg($"Ваш новый cd-ключ: {cdKey}");
+                }
+            }
+            catch (Exception ex)
+            {
+                GrowlsManager.ShowErrorMsg(ex, null);
+            }
+        }
+
+        [RelayCommand]
+        private void SaveSettings()
+        {
+            SettingsItem settings = new(GamePath, LaunchOptions, CheckUpdatesForMods, CheckUpdatesForApp);
+            SettingsManager.SaveSettings(settings);
+        }
     }
 }

@@ -1,24 +1,23 @@
-﻿using Avalonia.Controls;
-using CommunityToolkit.Mvvm.Input;
-using MsBox.Avalonia;
-using MsBox.Avalonia.Enums;
-using RA3_Launcher.Items;
+﻿using CommunityToolkit.Mvvm.Input;
+using Items;
+using Managers;
 using RA3_Launcher.Managers;
-using RA3_Launcher.Views;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ViewModels;
 
 namespace RA3_Launcher.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
     public event Action? OpenSettingsRequested;
+    public event Action? OpenModsRequested;
 
     [JsonIgnore]
     public string CurrentVersion { get; set; } = "Current Version";
@@ -36,20 +35,35 @@ public partial class MainViewModel : ViewModelBase
 
         if (!string.IsNullOrWhiteSpace(gamePath) && File.Exists(gamePath))
         {
-            List<string> launchOptions = [.. SettingsManager.CurrentSettings.LaunchOptions];
-            launchOptions.Add("-runver 1.12");
+            string launchOptions = SettingsManager.CurrentSettings.LaunchOptions ?? string.Empty;
+
+            // Убедимся, что опция -runver 1.12 не дублируется
+            const string runverOption = "-runver 1.12";
+            string[] parts = launchOptions.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            List<string> optionsList = [.. parts];
+
+            // Удаляем существующую опцию -runver, если есть
+            optionsList.RemoveAll(opt => opt.StartsWith("-runver"));
+
+            // Добавляем нужную версию
+            optionsList.Add(runverOption);
 
             if (SelectedMod != null)
             {
-                // Убираем дубликаты опции -modconfig, если она уже есть, и добавляем новую
-                launchOptions.RemoveAll(opt => opt.StartsWith("-modconfig "));
-                launchOptions.Add($"-modconfig \"{SelectedMod.ModPath}\""); // Заключаем путь в кавычки на случай пробелов
+                // Удаляем все вхождения опции -modconfig
+                optionsList.RemoveAll(opt => opt.StartsWith("-modconfig"));
+
+                // Добавляем новую опцию -modconfig с кавычками
+                optionsList.Add($"-modconfig \"{SelectedMod.ModPath}\"");
             }
+
+            // Формируем итоговую строку аргументов
+            launchOptions = string.Join(" ", optionsList);
 
             ProcessStartInfo ra3 = new()
             {
                 FileName = gamePath,
-                Arguments = string.Join(" ", launchOptions),
+                Arguments = launchOptions,
                 UseShellExecute = false
             };
 
@@ -74,6 +88,6 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     public void OpenModsCommand()
     {
-
+        OpenModsRequested?.Invoke();
     }
 }

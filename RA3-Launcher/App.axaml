@@ -9,7 +9,7 @@
 
 		<StyleInclude Source="avares://Avalonia.Themes.Fluent/FluentTheme.axaml"/>
 
-		<husk:HuskuiTheme Accent="System" />
+		<husk:HuskuiTheme Accent="Red" />
 
 	</Application.Styles>
 </Application>

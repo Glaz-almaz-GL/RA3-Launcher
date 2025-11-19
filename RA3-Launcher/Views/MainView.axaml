@@ -7,6 +7,7 @@
 			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 			 xmlns:fi="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
 			 x:Class="RA3_Launcher.Views.MainView"
+			 xmlns:dm="using:RA3_Launcher.Managers.DialogsManager"
 			 x:DataType="vm:MainViewModel">
 
 	<Design.DataContext>
@@ -14,86 +15,101 @@
 	</Design.DataContext>
 
 	<Grid RowDefinitions="*, Auto">
-		<!-- Фоновая иллюстрация (по умолчанию) -->
 		<Rectangle Grid.Row="0" Fill="{DynamicResource ThemeBackgroundBrush}" />
 
-		<!-- Верхняя панель с информацией -->
 		<StackPanel Grid.Row="0"
 					Orientation="Horizontal"
 					HorizontalAlignment="Right"
 					VerticalAlignment="Top"
 					Margin="20,20,20,0">
-			<TextBlock Text="{Binding CurrentVersion}"
-					   FontWeight="SemiBold"
-					   FontSize="14" />
-		</StackPanel>
-
-		<!-- Нижняя панель с кнопками и выбором мода -->
-		<StackPanel Grid.Row="1"
-					MinWidth="400"
-					MaxWidth="500"
-					HorizontalAlignment="Center"
-					VerticalAlignment="Bottom"
-					Margin="0,0,0,30"
-					Spacing="20">
-
-			<!-- Верхняя строка: кнопки -->
-			<StackPanel Orientation="Horizontal"
-						HorizontalAlignment="Center"
-						Spacing="15">
-
-				<!-- Settings Button -->
-				<Button Classes="Primary"
-						Command="{Binding OpenSettingsCommand}"
-						Width="48"
-						Height="48"
-						Theme="{StaticResource OutlineButtonTheme}">
-					<fi:SymbolIcon Symbol="Settings"
-								   Height="20"
-								   Width="20" />
-				</Button>
-
-				<!-- Launch Game Button -->
-				<Button Classes="Primary"
-						Command="{Binding LaunchGameCommand}"
-						Content="Launch Game"
-						Width="160"
-						Height="48"
-						Theme="{StaticResource OutlineButtonTheme}"
-						FontSize="14"
-						FontWeight="SemiBold" />
-
-				<!-- Mods Button -->
-				<Button Classes="Primary"
-						Command="{Binding OpenModsCommand}"
-						Width="48"
-						Height="48"
-						Theme="{StaticResource OutlineButtonTheme}">
-					<fi:SymbolIcon Symbol="WrenchScrewdriver"
-								   Height="20"
-								   Width="20" />
-				</Button>
-			</StackPanel>
-
-			<!-- Нижняя строка: выбор мода -->
-			<Grid ColumnDefinitions="Auto, *" ColumnSpacing="15">
-				<TextBlock Grid.Column="0"
-						   Text="Select Mod"
+			<Border Background="{DynamicResource ThemeBackgroundBrush}"
+					Opacity="0.8"
+					CornerRadius="8"
+					Padding="10,5">
+				<TextBlock Text="{Binding CurrentVersion}"
 						   FontWeight="SemiBold"
 						   FontSize="14"
-						   VerticalAlignment="Center" />
-
-				<ComboBox Grid.Column="1"
-						  HorizontalContentAlignment="Left"
-						  VerticalContentAlignment="Center"
-						  ItemsSource="{Binding AvailableMods}"
-						  SelectedItem="{Binding SelectedMod}"
-						  DisplayMemberBinding="{Binding NameAndVersion}"
-						  MinWidth="150"
-						  Height="40"
-						  HorizontalAlignment="Stretch" />
-			</Grid>
-
+						   Foreground="{DynamicResource ControlPrimaryForegroundBrush}" />
+			</Border>
 		</StackPanel>
+
+		<husk:Card
+		Grid.Row="1"
+		MinWidth="400"
+		MaxWidth="500"
+		Margin="0,0,0,30"
+		HorizontalAlignment="Center"
+		VerticalAlignment="Bottom" Opacity="0.9">
+
+			<StackPanel Spacing="20"
+						Background="{DynamicResource ThemeBackgroundBrush}"
+						>
+
+				<!-- Р’РЅСѓС‚СЂРµРЅРЅРёР№ StackPanel СЃ РєРЅРѕРїРєР°РјРё -->
+				<StackPanel Orientation="Horizontal"
+							HorizontalAlignment="Center"
+							Spacing="15">
+
+					<!-- Settings Button -->
+					<Button Classes="Primary"
+							Command="{Binding OpenSettingsCommand}"
+							Width="48"
+							Height="48"
+							Theme="{StaticResource OutlineButtonTheme}"
+							ToolTip.Tip="РќР°СЃС‚СЂРѕР№РєРё">
+						<fi:SymbolIcon Symbol="Settings"
+									   Height="20"
+									   Width="20" />
+					</Button>
+
+					<!-- Launch Game Button -->
+					<Button Classes="Primary"
+							Command="{Binding LaunchGameCommand}"
+							Content="Launch Game"
+							Width="160"
+							Height="48"
+							Theme="{StaticResource OutlineButtonTheme}"
+							FontSize="14"
+							FontWeight="SemiBold"
+							ToolTip.Tip="Р—Р°РїСѓСЃС‚РёС‚СЊ РёРіСЂСѓ" />
+
+					<!-- Mods Button -->
+					<Button Classes="Primary"
+							Command="{Binding OpenModsCommand}"
+							Width="48"
+							Height="48"
+							Theme="{StaticResource OutlineButtonTheme}"
+							ToolTip.Tip="РњРѕРґРёС„РёРєР°С†РёРё">
+						<fi:SymbolIcon Symbol="WrenchScrewdriver"
+									   Height="20"
+									   Width="20" />
+					</Button>
+				</StackPanel>
+
+				<!-- Р’С‹Р±РѕСЂ РјРѕРґР° -->
+				<Grid ColumnDefinitions="Auto, *" ColumnSpacing="15">
+					<TextBlock Grid.Column="0"
+							   Text="Select Mod"
+							   FontWeight="SemiBold"
+							   FontSize="14"
+							   VerticalAlignment="Center"
+							   Foreground="{DynamicResource ControlPrimaryForegroundBrush}" />
+
+					<ComboBox Grid.Column="1"
+							  HorizontalContentAlignment="Left"
+							  VerticalContentAlignment="Center"
+							  ItemsSource="{Binding AvailableMods}"
+							  SelectedItem="{Binding SelectedMod}"
+							  DisplayMemberBinding="{Binding NameAndVersion}"
+							  MinWidth="150"
+							  Height="40"
+							  HorizontalAlignment="Stretch"
+							  BorderThickness="1"
+							  BorderBrush="{DynamicResource ControlAccentBrush}"
+							  CornerRadius="6" />
+				</Grid>
+
+			</StackPanel>
+		</husk:Card>
 	</Grid>
 </UserControl>

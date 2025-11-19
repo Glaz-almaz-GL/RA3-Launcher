@@ -1,36 +1,31 @@
-﻿using RA3_Launcher.Items;
-using System;
+﻿using Items;
+using Managers;
+using RA3_Launcher.ViewModels;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace RA3_Launcher.Managers
 {
     public static partial class ModManager
     {
-        private static readonly string documentsDirPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        private static readonly string modFolderPath = Path.Combine(documentsDirPath, "Red Alert 3", "Mods");
-
         public static List<ModInfo> GetModsFromDocuments()
         {
             List<ModInfo> mods = [];
 
-            if (Directory.Exists(modFolderPath))
+            if (Directory.Exists(FilePaths.ModsDirPath))
             {
-                foreach (var modPath in Directory.GetDirectories(modFolderPath))
+                foreach (string modPath in Directory.GetDirectories(FilePaths.ModsDirPath))
                 {
                     string? skudefFile = Directory.GetFiles(modPath, "*.skudef").FirstOrDefault();
 
                     if (!string.IsNullOrWhiteSpace(skudefFile))
                     {
                         // Path.GetFileNameWithoutExtension возвращает "RemixEn_0.3.7"
-                        var modInfo = ParseFileName(Path.GetFileNameWithoutExtension(skudefFile));
-                        string modName = modInfo.Name;
-                        string modVersion = modInfo.Version;
+                        (string Name, string Version) = ParseFileName(Path.GetFileNameWithoutExtension(skudefFile));
+                        string modName = Name;
+                        string modVersion = Version;
 
                         if (string.IsNullOrWhiteSpace(modName) || string.IsNullOrWhiteSpace(modVersion))
                         {
@@ -48,8 +43,8 @@ namespace RA3_Launcher.Managers
         private static (string Name, string Version) ParseFileName(string fileNameWithoutExtension)
         {
             // Регулярное выражение теперь ожидает X.Y или X.Y.Z и т.д.
-            var regex = ModInfoRegex();
-            var match = regex.Match(fileNameWithoutExtension);
+            Regex regex = ModInfoRegex();
+            Match match = regex.Match(fileNameWithoutExtension);
 
             if (match.Success)
             {
