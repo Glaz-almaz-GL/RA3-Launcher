@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Items;
 using Managers;
-using RA3_Launcher.Managers;
 using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
@@ -33,7 +32,7 @@ namespace RA3_Launcher.ViewModels
         [RelayCommand]
         private async Task BrowseGamePath()
         {
-            var file = await DialogsManager.ShowOpenSingleFileDialogAsync("Выберите исполняемый файл RA3", ["*.exe"]);
+            IStorageFile? file = await DialogsManager.ShowOpenSingleFileDialogAsync("Выберите исполняемый файл RA3", ["*.exe"]);
 
             if (file != null)
             {
@@ -51,19 +50,19 @@ namespace RA3_Launcher.ViewModels
         }
 
         [RelayCommand]
-        private void Apply4GBPatch()
+        private static void Apply4GBPatch()
         {
             InstallPatchManager.Install4GBPatch();
         }
 
         [RelayCommand]
-        private void FixRegistry()
+        private static void FixRegistry()
         {
             RegistryManager.FixRegistry();
         }
 
         [RelayCommand]
-        private async Task InstallBattleNet()
+        private static async Task InstallBattleNet()
         {
             try
             {
@@ -79,7 +78,7 @@ namespace RA3_Launcher.ViewModels
         }
 
         [RelayCommand]
-        private void InstallCnCOnline()
+        private static void InstallCnCOnline()
         {
             try
             {
@@ -95,7 +94,7 @@ namespace RA3_Launcher.ViewModels
         }
 
         [RelayCommand]
-        private void InstallRadminVPN()
+        private static void InstallRadminVPN()
         {
             try
             {
@@ -111,7 +110,7 @@ namespace RA3_Launcher.ViewModels
         }
 
         [RelayCommand]
-        private void GenerateCDKey()
+        private static void GenerateCDKey()
         {
             try
             {

@@ -1,6 +1,5 @@
 ﻿using Items;
 using Managers;
-using RA3_Launcher.ViewModels;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

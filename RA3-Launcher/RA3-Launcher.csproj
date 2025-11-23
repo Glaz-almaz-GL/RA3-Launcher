@@ -25,6 +25,7 @@
     <PackageReference Include="MessageBox.Avalonia" Version="3.3.0" />
     <PackageReference Include="MonoTorrent" Version="3.0.2" />
     <PackageReference Include="Movere" Version="0.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <ItemGroup>

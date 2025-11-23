@@ -9,6 +9,8 @@ namespace Managers
 {
     public static class SettingsManager
     {
+        private const string ErrorTitle = "Error";
+
         private static readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "RA3_Launcher", // Подкаталог для вашего приложения
@@ -46,13 +48,13 @@ namespace Managers
                     }
                     else
                     {
-                        Trace.WriteLine($"[SettingsManager] Десериализация вернула null, возвращаем настройки по умолчанию", "Warning");
+                        Trace.WriteLine("[SettingsManager] Десериализация вернула null, возвращаем настройки по умолчанию", "Warning");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[SettingsManager] Ошибка при загрузке настроек: {ex.GetType().Name} - {ex.Message}", "Error");
-                    Debug.WriteLine($"[SettingsManager] Stack Debug: {ex.StackTrace}", "Error");
+                    Debug.WriteLine($"[SettingsManager] Ошибка при загрузке настроек: {ex.GetType().Name} - {ex.Message}", ErrorTitle);
+                    Debug.WriteLine($"[SettingsManager] Stack Debug: {ex.StackTrace}", ErrorTitle);
                     // Возвращаем настройки по умолчанию в случае ошибки
                 }
             }
@@ -62,7 +64,7 @@ namespace Managers
             }
 
             // Если файл не существует или произошла ошибка, возвращаем настройки по умолчанию
-            Debug.WriteLine($"[SettingsManager] Возвращаем настройки по умолчанию", "Info");
+            Debug.WriteLine("[SettingsManager] Возвращаем настройки по умолчанию", "Info");
             return new SettingsItem();
         }
 
@@ -88,8 +90,8 @@ namespace Managers
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[SettingsManager] Ошибка при сохранении настроек: {ex.GetType().Name} - {ex.Message}", "Error");
-                Debug.WriteLine($"[SettingsManager] Stack Trace: {ex.StackTrace}", "Error");
+                Debug.WriteLine($"[SettingsManager] Ошибка при сохранении настроек: {ex.GetType().Name} - {ex.Message}", ErrorTitle);
+                Debug.WriteLine($"[SettingsManager] Stack Trace: {ex.StackTrace}", ErrorTitle);
                 throw; // Перебрасываем исключение, если вызывающий код должен обработать его
             }
         }

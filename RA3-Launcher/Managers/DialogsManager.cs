@@ -1,17 +1,17 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Huskui.Avalonia.Controls;
-using RA3_Launcher.Items;
+using Items;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Managers
 {
     public static class DialogsManager
     {
+        private const string EmptyTitleMsg = "Title cannot be null or empty";
         private static TopLevel? _topLevel;
         private static AppWindow? _appWindow;
 
@@ -43,7 +43,7 @@ namespace Managers
 
             if (string.IsNullOrEmpty(title))
             {
-                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+                throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
 
             MessageDialog dialog = new()
@@ -72,11 +72,11 @@ namespace Managers
 
             if (string.IsNullOrEmpty(title))
             {
-                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+                throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
 
-            var options = CreateFolderPickerOptions(title, false);
-            var folder = await _topLevel.StorageProvider.OpenFolderPickerAsync(options);
+            FolderPickerOpenOptions options = CreateFolderPickerOptions(title, false);
+            IReadOnlyList<IStorageFolder> folder = await _topLevel.StorageProvider.OpenFolderPickerAsync(options);
 
             return folder.Count > 0 ? folder[0] : null;
         }
@@ -90,11 +90,11 @@ namespace Managers
 
             if (string.IsNullOrEmpty(title))
             {
-                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+                throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
 
-            var options = CreateFolderPickerOptions(title, false);
-            var folders = await _topLevel.StorageProvider.OpenFolderPickerAsync(options);
+            FolderPickerOpenOptions options = CreateFolderPickerOptions(title, false);
+            IReadOnlyList<IStorageFolder> folders = await _topLevel.StorageProvider.OpenFolderPickerAsync(options);
 
             return (List<IStorageFolder>)(folders.Count > 0 ? folders : []);
         }
@@ -112,11 +112,11 @@ namespace Managers
 
             if (string.IsNullOrEmpty(title))
             {
-                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+                throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
 
-            var options = CreateFilePickerOptions(title, allowedExtensions, false);
-            var files = await _topLevel.StorageProvider.OpenFilePickerAsync(options);
+            FilePickerOpenOptions options = CreateFilePickerOptions(title, allowedExtensions, false);
+            IReadOnlyList<IStorageFile> files = await _topLevel.StorageProvider.OpenFilePickerAsync(options);
 
             return files.Count > 0 ? files[0] : null;
         }
@@ -130,11 +130,11 @@ namespace Managers
 
             if (string.IsNullOrEmpty(title))
             {
-                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+                throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
 
-            var options = CreateFilePickerOptions(title, allowedExtensions, true);
-            var files = await _topLevel.StorageProvider.OpenFilePickerAsync(options);
+            FilePickerOpenOptions options = CreateFilePickerOptions(title, allowedExtensions, true);
+            IReadOnlyList<IStorageFile> files = await _topLevel.StorageProvider.OpenFilePickerAsync(options);
 
             return (List<IStorageFile>)(files.Count > 0 ? files : []);
         }
