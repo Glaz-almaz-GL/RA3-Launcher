@@ -1,6 +1,7 @@
 ﻿using Huskui.Avalonia.Controls;
 using Huskui.Avalonia.Models;
 using System;
+using System.Linq;
 
 namespace Managers
 {
@@ -35,9 +36,14 @@ namespace Managers
             return ShowGrowlMsg(GrowlLevel.Warning, title, warnMsg);
         }
 
-        public static GrowlItem? ShowErrorMsg(Exception ex, string? title)
+        public static GrowlItem? ShowErrorMsg(Exception ex, string? title = "", bool showInnerEx = true)
         {
-            string errorMessage = ex.Message + (ex.InnerException?.Message ?? "");
+            string errorMessage = ex.Message;
+            if (showInnerEx)
+            {
+                errorMessage += ex.InnerException?.Message ?? string.Empty;
+            }
+
             return ShowGrowlMsg(GrowlLevel.Danger, title, errorMessage);
         }
 

@@ -1,0 +1,100 @@
+<husk:Toast xmlns="https://github.com/avaloniaui"
+			xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+			xmlns:fi="using:FluentIcons.Avalonia"
+			xmlns:local="using:RA3_Launcher.Toasts"
+			xmlns:utils="using:RA3_Launcher.Utils"
+			mc:Ignorable="d"
+			d:DesignWidth="800"
+			d:DesignHeight="960"
+			x:DataType="local:ModInfoToast"
+			x:Class="RA3_Launcher.Toasts.ModInfoToast"
+			IsHeaderVisible="False" Padding="30,15">
+
+	<ScrollViewer HorizontalScrollBarVisibility="Disabled"
+				  VerticalScrollBarVisibility="Auto">
+		<StackPanel Orientation="Vertical" Spacing="5">
+			<TextBlock Text="{Binding Mod.Name}" FontSize="18" FontWeight="Bold"/>
+			<husk:Card Padding="20" Margin="8,0,8,8">
+				<StackPanel Spacing="16">
+
+					<!-- Автор с иконкой -->
+					<husk:IconLabel Icon="Person"
+									Text="{Binding Mod.Author}"
+									Foreground="{DynamicResource ControlAccentBackgroundBrush}"
+									FontSize="14" />
+
+					<!-- Описание -->
+					<TextBlock Text="{Binding Mod.Description}"
+							   TextWrapping="Wrap"
+							   FontSize="14"
+							   LineHeight="20"
+							   Foreground="{DynamicResource ThemeForegroundBrush}" />
+
+					<!-- Метки: категория (акцент) + версия игры (нейтральная) -->
+					<StackPanel Orientation="Horizontal" Spacing="8">
+						<husk:Tag Content="{Binding Mod.Category}"
+								  Classes="Primary"
+								  IsVisible="{Binding Mod.Category, Converter={x:Static utils:ObjectConverters.IsNotNullOrEmpty}}" />
+						<husk:Tag Content="{Binding Mod.GameVersion}"
+								  IsVisible="{Binding Mod.GameVersion, Converter={x:Static utils:ObjectConverters.IsNotNullOrEmpty}}" />
+					</StackPanel>
+
+					<!-- Статистика: скачивания + дата -->
+					<Grid ColumnDefinitions="Auto,1*">
+						<StackPanel Grid.Column="0" Orientation="Horizontal">
+							<fi:SymbolIcon
+							Symbol="ArrowDownload"
+							Foreground="{DynamicResource ControlAccentBackgroundBrush}" />
+							<TextBlock Text="{Binding Mod.TotalDownloads, StringFormat='{}{0:N0} downloads'}"/>
+						</StackPanel>
+						<TextBlock Grid.Column="1"
+								   Text="{Binding Mod.LastUpdated, StringFormat='Updated: {0:MMM dd, yyyy}'}"
+								   HorizontalAlignment="Right"
+								   FontSize="12"
+								   Foreground="{DynamicResource ControlTertiaryForegroundBrush}" />
+					</Grid>
+
+					<!-- Последняя версия -->
+					<husk:InfoBar Classes="Primary"
+								  Header="Latest version"
+								  Content="{Binding Mod.LatestVersion}"
+								  IsVisible="{Binding Mod.LatestVersion, Converter={x:Static utils:ObjectConverters.IsNotNullOrEmpty}}" />
+
+					<!-- Changelog (если есть) -->
+					<Border Background="{DynamicResource ControlAccentLowBackgroundBrush}"
+							CornerRadius="6"
+							Padding="12"
+							IsVisible="{Binding Mod.Versions, Converter={x:Static utils:ObjectConverters.HasChangelog}}">
+						<StackPanel Spacing="6">
+							<TextBlock Text="What's new"
+									   FontWeight="{StaticResource ControlStrongFontWeight}"
+									   Foreground="{DynamicResource ControlForegroundBrush}" />
+							<TextBlock Text="{Binding Mod.Versions[0].Changelog}"
+									   TextWrapping="Wrap"
+									   FontSize="13"
+									   Foreground="{DynamicResource ControlSecondaryForegroundBrush}" />
+						</StackPanel>
+					</Border>
+
+					<!-- Кнопки действия -->
+					<StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+						<Button Classes="Primary"
+								Command="{Binding OpenWebsiteCommand}"
+								IsEnabled="{Binding Mod.Website, Converter={x:Static utils:ObjectConverters.IsNotNullOrEmpty}}" >
+							<husk:IconLabel Text="Website" Icon="Link"/>
+						</Button>
+						<Button Classes="Ghost"
+								Command="{Binding OpenRepositoryCommand}"
+								IsEnabled="{Binding Mod.RepositoryUrl, Converter={x:Static utils:ObjectConverters.IsNotNullOrEmpty}}" >
+							<husk:IconLabel Text="Source" Icon="Code"/>
+						</Button>
+					</StackPanel>
+
+				</StackPanel>
+			</husk:Card>
+		</StackPanel>
+	</ScrollViewer>
+</husk:Toast>
