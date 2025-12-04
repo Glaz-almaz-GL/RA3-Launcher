@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Managers.AvaloniaManagers;
+using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace Managers
+namespace Managers.RAManagers
 {
     public static class RegistryManager
     {
@@ -46,7 +47,7 @@ namespace Managers
 
                     if (process.ExitCode == 0)
                     {
-                        GrowlsManager.ShowSuccesMsg("Файл реестра успешно применен.");
+                        GrowlsManager.ShowSuccessMsg("Файл реестра успешно применен.");
                     }
                     else
                     {

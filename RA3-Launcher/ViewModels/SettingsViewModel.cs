@@ -2,7 +2,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Items;
-using Managers;
+using Managers.AvaloniaManagers;
+using Managers.RAManagers;
 using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;

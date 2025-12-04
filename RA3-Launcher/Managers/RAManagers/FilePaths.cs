@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Managers
+namespace Managers.RAManagers
 {
     public static class FilePaths
     {

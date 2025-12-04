@@ -42,8 +42,7 @@
 		VerticalAlignment="Bottom" Opacity="0.9">
 
 			<StackPanel Spacing="20"
-						Background="{DynamicResource ThemeBackgroundBrush}"
-						>
+						Background="{DynamicResource ThemeBackgroundBrush}">
 
 				<!-- Внутренний StackPanel с кнопками -->
 				<StackPanel Orientation="Horizontal"
@@ -87,7 +86,7 @@
 				</StackPanel>
 
 				<!-- Выбор мода -->
-				<Grid ColumnDefinitions="Auto, *" ColumnSpacing="15">
+				<Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="15">
 					<TextBlock Grid.Column="0"
 							   Text="Select Mod"
 							   FontWeight="SemiBold"
@@ -98,7 +97,7 @@
 					<ComboBox Grid.Column="1"
 							  HorizontalContentAlignment="Left"
 							  VerticalContentAlignment="Center"
-							  ItemsSource="{Binding AvailableMods}"
+							  ItemsSource="{Binding InstalledMods}"
 							  SelectedItem="{Binding SelectedMod}"
 							  DisplayMemberBinding="{Binding NameAndVersion}"
 							  MinWidth="150"
@@ -107,6 +106,17 @@
 							  BorderThickness="1"
 							  BorderBrush="{DynamicResource ControlAccentBrush}"
 							  CornerRadius="6" />
+					<Button
+					Grid.Column="2"
+					ToolTip.Tip="Обновить список модификаций"
+					Padding="10"
+					Theme="{StaticResource GhostButtonTheme}"
+					Command="{Binding RefreshInstalledModsCommand}">
+						<fi:SymbolIcon
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Symbol="ArrowClockwise"/>
+					</Button>
 				</Grid>
 
 			</StackPanel>

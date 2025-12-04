@@ -1,8 +1,8 @@
 ﻿// Managers.Github/GitHubModManager.Helpers.cs
-using RA3_Launcher.Managers.GithubModManager;
+using Managers.GithubModManager;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -16,9 +16,9 @@ namespace Managers.Github
         /// </summary>
         /// <param name="downloadUrl">URL файла.</param>
         /// <returns>Содержимое файла в виде строки.</returns>
-        private static async Task<string> GetFileContentAsync(string downloadUrl)
+        private static async Task<string> GetFileContentAsync(string? downloadUrl)
         {
-            return string.IsNullOrEmpty(downloadUrl) ? string.Empty : await _httpClient.GetStringAsync(downloadUrl);
+            return string.IsNullOrWhiteSpace(downloadUrl) ? string.Empty : await _httpClient.GetStringAsync(downloadUrl);
         }
 
         /// <summary>
@@ -28,13 +28,13 @@ namespace Managers.Github
         /// <returns>Контрольная сумма или пустая строка.</returns>
         private static async Task<string> GetFileChecksumAsync(string? downloadUrl)
         {
-            if (string.IsNullOrEmpty(downloadUrl))
+            if (string.IsNullOrWhiteSpace(downloadUrl))
             {
                 return string.Empty;
             }
 
             string pathToFile = ExtractPathFromRawUrl(downloadUrl);
-            if (string.IsNullOrEmpty(pathToFile))
+            if (string.IsNullOrWhiteSpace(pathToFile))
             {
                 return string.Empty;
             }
@@ -47,7 +47,7 @@ namespace Managers.Github
                 if (response.IsSuccessStatusCode)
                 {
                     string jsonContent = await response.Content.ReadAsStringAsync();
-                    var fileInfo = Newtonsoft.Json.Linq.JObject.Parse(jsonContent);
+                    JObject fileInfo = Newtonsoft.Json.Linq.JObject.Parse(jsonContent);
 
                     string sha = fileInfo[GitHubConstants.ShaParam]?.ToString() ?? string.Empty;
                     return sha;
@@ -72,7 +72,7 @@ namespace Managers.Github
         /// <returns>Путь к файлу внутри репозитория.</returns>
         private static string ExtractPathFromRawUrl(string rawUrl)
         {
-            if (string.IsNullOrEmpty(rawUrl))
+            if (string.IsNullOrWhiteSpace(rawUrl))
             {
                 return string.Empty;
             }
@@ -83,17 +83,6 @@ namespace Managers.Github
             string[] parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             return parts.Length >= 3 ? string.Join("/", parts.Skip(3)) : string.Empty;
-        }
-
-        /// <summary>
-        /// Извлекает код языка из имени файла локализации.
-        /// </summary>
-        /// <param name="fileName">Имя файла (например, Russian.big).</param>
-        /// <returns>Код языка (например, Russian) или null.</returns>
-        private static string? ExtractLanguageNameFromFileName(string fileName)
-        {
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            return string.IsNullOrEmpty(fileNameWithoutExtension) ? null : fileNameWithoutExtension;
         }
     }
 }

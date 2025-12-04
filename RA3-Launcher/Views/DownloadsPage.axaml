@@ -2,88 +2,157 @@
 		   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		   xmlns:mod="using:Items.Mod"
 		   xmlns:viewmodels="using:ViewModels"
+		   xmlns:items="clr-namespace:Items.Mod"
 		   mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-		   xmlns:fi="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+		   xmlns:utils="using:Utils"
+		   xmlns:fi="using:FluentIcons.Avalonia"
 		   xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
 		   x:DataType="viewmodels:DownloadViewModel"
 		   x:Class="RA3_Launcher.Views.DownloadsPage">
 
-	<Grid RowDefinitions="Auto, *" RowSpacing="5">
-		<husk:Card Grid.Row="0" Margin="10">
-			<TabControl Padding="0" TabStripPlacement="Top" Classes="Primary" Theme="{StaticResource SolidTabControlTheme}">
-				<TabItem Classes="Primary">
-					<TabItem.Header>
-						<husk:IconLabel Icon="WrenchScrewdriver" Text="Mods"/>
-					</TabItem.Header>
-				</TabItem>
+	<husk:Page.Resources>
+		<utils:NonZeroToBoolConverter x:Key="NotZeroToBoolConverter" />
+	</husk:Page.Resources>
 
-				<TabItem Classes="Primary">
-					<TabItem.Header>
-						<husk:IconLabel Icon="Map" Text="Maps"/>
-					</TabItem.Header>
-				</TabItem>
-			</TabControl>
-		</husk:Card>
-		<husk:Card Grid.Row="1" Margin="10,0,10,10">
-			<ItemsControl ItemsSource="{Binding AvailableMods}">
-				<ItemsControl.ItemTemplate>
-					<DataTemplate x:DataType="mod:Mod">
-						<husk:Card PointerPressed="ModInfo_PointerPressed" DataContext="{Binding}"
-								   Padding="16"
-								   MaxWidth="280"
-								   MinHeight="200"
-								   MaxHeight="250"
-								   Background="{DynamicResource CardBackgroundBrush}">
-							<Grid RowDefinitions="Auto,Auto,1*,Auto">
-								<!-- Заголовок -->
-								<TextBlock Grid.Row="0"
-										   Text="{Binding Name}"
-										   FontWeight="{StaticResource ControlStrongFontWeight}"
-										   FontSize="{StaticResource LargeFontSize}"
-										   TextTrimming="CharacterEllipsis"
-										   ToolTip.Tip="{Binding Name}" />
+	<Grid>
+		<Grid RowDefinitions="Auto,Auto,*" RowSpacing="12" Margin="16, 6">
+			<husk:Card Grid.Row="1" Padding="0">
+				<Grid>
+					<Button Theme="{StaticResource GhostButtonTheme}"
+							ToolTip.Tip="Назад"
+							Command="{Binding GoToMainCommand}"
+							Padding="15,10"
+							HorizontalAlignment="Left">
+						<fi:SymbolIcon HorizontalAlignment="Left" FontSize="14" Symbol="ArrowLeft"/>
+					</Button>
 
-								<!-- Разделитель -->
-								<husk:Divider Grid.Row="1" Margin="0,8" />
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+						<RadioButton Content="Mods"
+									 Command="{Binding SelectModsCommand}"
+									 IsChecked="{Binding IsModsSelected}"
+									 MinWidth="100">
+							<RadioButton.ContentTemplate>
+								<DataTemplate>
+									<husk:IconLabel Icon="WrenchScrewdriver" Text="{Binding}" />
+								</DataTemplate>
+							</RadioButton.ContentTemplate>
+						</RadioButton>
+						<RadioButton Content="Maps"
+									 Command="{Binding SelectMapsCommand}"
+									 IsChecked="{Binding IsMapsSelected}"
+									 MinWidth="100">
+							<RadioButton.ContentTemplate>
+								<DataTemplate>
+									<husk:IconLabel Icon="Map" Text="{Binding}" />
+								</DataTemplate>
+							</RadioButton.ContentTemplate>
+						</RadioButton>
+					</StackPanel>
 
-								<!-- Описание (ограничено 3 строками) -->
-								<TextBlock Grid.Row="2"
-										   Text="{Binding Description}"
-										   TextWrapping="Wrap"
-										   MaxLines="3"
-										   LineHeight="18"
-										   Foreground="{StaticResource ControlSecondaryForegroundBrush}"
-										   ToolTip.Tip="{Binding Description}" />
+					<Button Theme="{StaticResource GhostButtonTheme}"
+							ToolTip.Tip="Обновить список"
+							Command="{Binding LoadModsCommand}"
+							Padding="15,10"
+							HorizontalAlignment="Right">
+						<fi:SymbolIcon HorizontalAlignment="Right" FontSize="14" Symbol="ArrowClockwise"/>
+					</Button>
+				</Grid>
+			</husk:Card>
 
-								<!-- Кнопки -->
-								<StackPanel Grid.Row="3"
-											Orientation="Horizontal"
-											Spacing="8"
-											Margin="0,12,0,0">
-									<Button Classes="Primary"
-											HorizontalAlignment="Left"
-											Command="{Binding DownloadCommand}">
-										<husk:IconLabel Text="Скачать" Icon="ArrowDownload" />
-									</Button>
-									<Button Classes="Danger"
-											HorizontalAlignment="Right"
-											Command="{Binding DeleteCommand}">
-										<husk:IconLabel Text="Удалить" Icon="Delete" />
-									</Button>
-								</StackPanel>
-							</Grid>
-						</husk:Card>
-					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10"/>
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
-			</ItemsControl>
-		</husk:Card>
+			<!-- Список модов -->
+			<husk:Card Grid.Row="2" IsVisible="{Binding IsModsSelected}" Padding="0">
+				<Grid>
+					<TextBlock Text="Загрузка..." FontSize="18"
+							   IsVisible="{Binding IsModsLoading}"
+							   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+					<husk:BusyContainer CornerRadius="6" IsBusy="{Binding IsModsLoading}" Padding="10">
+						<ScrollViewer>
+							<ItemsControl ItemsSource="{Binding AvailableMods}">
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<WrapPanel Orientation="Horizontal" ItemSpacing="16" LineSpacing="16" />
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+								<ItemsControl.ItemTemplate>
+									<DataTemplate x:DataType="items:ModViewModel">
+										<husk:Card PointerPressed="ModInfo_PointerPressed"
+												   MinWidth="260" MaxWidth="300" MinHeight="220"
+												   Padding="16"
+												   CornerRadius="{StaticResource MediumCornerRadius}">
+											<Grid >
+												<StackPanel  Orientation="Vertical" Spacing="8">
+													<TextBlock VerticalAlignment="Top"
+															   HorizontalAlignment="Left"
+															   Text="{Binding Name}"
+															   FontWeight="Bold"
+															   Foreground="{StaticResource ControlAccentBackgroundBrush}"/>
+
+													<TextBlock VerticalAlignment="Top"
+															   HorizontalAlignment="Left"
+															   Text="{Binding Description}"
+															   TextWrapping="Wrap"
+															   LineHeight="18"/>
+												</StackPanel>
+
+												<Grid  VerticalAlignment="Bottom" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,12,0,0">
+													<!-- Версия -->
+													<TextBlock
+													Grid.Column="0"
+													Classes="Primary"
+													Text="{Binding LatestVersion}"
+													FontSize="12"
+													VerticalAlignment="Center"
+													Foreground="{StaticResource ControlAccentBackgroundBrush}"
+													IsVisible="{Binding LatestVersion, Converter={x:Static utils:ObjectConverters.IsNotNullOrEmpty}}" />
+
+													<!-- ComboBox выбора языка (виден, только если есть языки) -->
+													<ComboBox
+													Grid.Column="1"
+													ItemsSource="{Binding AvailableLanguages}"
+													SelectedItem="{Binding SelectedLanguage}"
+													PlaceholderText="Язык"
+													Margin="8,0"
+													MinWidth="100"
+													PointerPressed="InteractiveElement_PointerPressed"
+													IsVisible="{Binding AvailableLanguages.Count, Converter={StaticResource NotZeroToBoolConverter}}"
+													VerticalAlignment="Bottom" />
+
+													<!-- Единая кнопка "Скачать" -->
+													<Button
+													Grid.Column="2"
+													Theme="{StaticResource GhostButtonTheme}"
+													Command="{Binding DownloadCommand}"
+													IsEnabled="{Binding !IsInstalled}"
+													IsVisible="{Binding !IsInstalled}"
+													VerticalAlignment="Bottom"
+													ToolTip.Tip="Скачать мод (с языком, если выбран)">
+														<fi:SymbolIcon Symbol="ArrowDownload" />
+													</Button>
+
+													<!-- Кнопка "Удалить" (видна, когда установлено) -->
+													<Button
+													Grid.Column="2"
+													Classes="Danger"
+													Theme="{StaticResource GhostButtonTheme}"
+													Command="{Binding DeleteCommand}"
+													IsEnabled="{Binding IsInstalled}"
+													IsVisible="{Binding IsInstalled}"
+													VerticalAlignment="Bottom"
+													ToolTip.Tip="Удалить">
+														<fi:SymbolIcon Symbol="Delete" />
+													</Button>
+												</Grid>
+											</Grid>
+										</husk:Card>
+									</DataTemplate>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+						</ScrollViewer>
+					</husk:BusyContainer>
+				</Grid>
+			</husk:Card>
+		</Grid>
 	</Grid>
-
 </husk:Page>

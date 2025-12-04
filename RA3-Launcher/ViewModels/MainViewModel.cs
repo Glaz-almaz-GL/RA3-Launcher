@@ -1,12 +1,13 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using Items;
-using Managers;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Items.Mod;
+using Managers.AvaloniaManagers;
 using RA3_Launcher.Managers;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using ViewModels;
 
@@ -17,14 +18,17 @@ public partial class MainViewModel : ViewModelBase
     public event Action? OpenSettingsRequested;
     public event Action? OpenModsRequested;
 
-    [JsonIgnore]
     public string CurrentVersion { get; set; } = "Current Version";
 
-    [JsonIgnore]
-    public List<ModInfo> AvailableMods { get; set; } = ModManager.GetModsFromDocuments();
+    [ObservableProperty]
+    private ObservableCollection<InstalledModInfo> _installedMods = [];
 
-    [JsonIgnore]
-    public ModInfo? SelectedMod { get; set; } = null;
+    public InstalledModInfo? SelectedMod { get; set; } = null;
+
+    public MainViewModel()
+    {
+        InstalledMods = new ObservableCollection<InstalledModInfo>(InstalledModsManager.InstalledMods);
+    }
 
     [RelayCommand]
     public async Task LaunchGameCommand()
@@ -74,6 +78,16 @@ public partial class MainViewModel : ViewModelBase
         else
         {
             GrowlsManager.ShowErrorMsg("Укажите путь до ra3.exe в настройках.");
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshInstalledMods()
+    {
+        InstalledMods.Clear();
+        foreach (InstalledModInfo mod in InstalledModsManager.InstalledMods)
+        {
+            InstalledMods.Add(mod);
         }
     }
 

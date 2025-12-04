@@ -1,9 +1,8 @@
 ﻿using Huskui.Avalonia.Controls;
 using Huskui.Avalonia.Models;
 using System;
-using System.Linq;
 
-namespace Managers
+namespace Managers.AvaloniaManagers
 {
     public static class GrowlsManager
     {
@@ -26,7 +25,7 @@ namespace Managers
             return ShowGrowlMsg(GrowlLevel.Information, title, msg, true, progress);
         }
 
-        public static GrowlItem? ShowSuccesMsg(string msg, string? title = null)
+        public static GrowlItem? ShowSuccessMsg(string msg, string? title = null)
         {
             return ShowGrowlMsg(GrowlLevel.Success, title, msg);
         }

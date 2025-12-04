@@ -1,14 +1,15 @@
-﻿// Managers.Github/GitHubModManager.Core.cs
+﻿using DynamicData;
 using Items.Mod;
+using Managers.AvaloniaManagers;
+using Managers.GithubModManager;
 using Newtonsoft.Json.Linq;
-using RA3_Launcher.Managers.GithubModManager;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Managers.Github
@@ -18,7 +19,10 @@ namespace Managers.Github
     /// </summary>
     public static partial class GitHubModManager
     {
-        private static readonly HttpClient _httpClient = new();
+        private static readonly HttpClient _httpClient = new(new HttpClientHandler()
+        {
+            SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13
+        });
 
         /// <summary>
         /// Инициализирует HTTP-клиент с необходимыми заголовками для работы с GitHub API.
@@ -32,7 +36,7 @@ namespace Managers.Github
 
             string? token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
             Debug.WriteLine($"GITHUB_TOKEN из окружения: '{token}'");
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrWhiteSpace(token))
             {
                 Debug.WriteLine("Предупреждение: Переменная GITHUB_TOKEN не найдена или пуста.");
             }
@@ -45,58 +49,55 @@ namespace Managers.Github
         /// <summary>
         /// Асинхронно получает список модов из репозитория GitHub.
         /// </summary>
-        /// <returns>Список объектов <see cref="Mod"/>.</returns>
-        public static async Task<ICollection<Mod>> GetModsAsync()
+        /// <returns>Список объектов <see cref="ModMetadata"/>.</returns>
+        public static async Task<List<ModMetadata>> GetModsAsync()
         {
-            var mods = new List<Mod>();
-
+            List<ModMetadata> mods = [];
             JArray repositoryContents;
+
             try
             {
                 repositoryContents = await GetRepositoryContentsAsync("");
             }
             catch
             {
-                // Ошибка уже отображена в GrowlsManager внутри GetRepositoryContentsAsync
-                return mods; // возвращаем пустой список
+                return mods;
             }
 
-            // Собираем задачи параллельно (но не слишком агрессивно)
-            var parseTasks = new List<Task<Mod?>>();
+            List<string> modDirs = [.. repositoryContents
+                .Where(item => item[GitHubConstants.TypeParam]?.ToString() == "dir" &&
+                              !GitHubConstants.ModsFolderName.Equals(item[GitHubConstants.NameParam]?.ToString(), StringComparison.OrdinalIgnoreCase))
+                .Select(item => item[GitHubConstants.NameParam]?.ToString()!)];
 
-            foreach (JToken item in repositoryContents)
+            const int maxConcurrency = 4;
+            using SemaphoreSlim semaphore = new(maxConcurrency, maxConcurrency);
+            List<Task<ModMetadata?>> results = [];
+
+            foreach (string modName in modDirs)
             {
-                string? itemType = item[GitHubConstants.TypeParam]?.ToString();
-                string? itemName = item[GitHubConstants.NameParam]?.ToString();
-
-                if (itemType == "dir" &&
-                    !string.IsNullOrEmpty(itemName) &&
-                    !itemName.Equals(GitHubConstants.ModsFolderName, StringComparison.OrdinalIgnoreCase))
+                results.Add(Task.Run(async () =>
                 {
-                    // Запускаем парсинг параллельно
-                    parseTasks.Add(ParseModAsync(itemName));
-                }
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        return await ParseModAsync(modName);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }));
             }
 
             try
             {
-                // Дожидаемся всех параллельных задач
-                var parsedMods = await Task.WhenAll(parseTasks);
-
-                // Фильтруем null и добавляем в список
-                foreach (var mod in parsedMods)
-                {
-                    if (mod is not null)
-                        mods.Add(mod);
-                }
+                ModMetadata?[] parsedMods = await Task.WhenAll(results);
+                mods.AddRange(parsedMods.Where(m => m != null)!);
             }
             catch (Exception ex)
             {
-                // Общая ошибка при парсинге (редко, но возможно)
                 GrowlsManager.ShowErrorMsg(ex, "Ошибка при обработке модификаций", false);
             }
-
-            Debug.WriteLine($"Получено {mods.Count} модов.");
 
             return mods;
         }
@@ -129,161 +130,208 @@ namespace Managers.Github
         /// Асинхронно парсит информацию о моде по его имени.
         /// </summary>
         /// <param name="modName">Имя каталога мода.</param>
-        /// <returns>Объект <see cref="Mod"/> или null, если возникла ошибка.</returns>
-        private static async Task<Mod?> ParseModAsync(string modName)
+        /// <returns>Объект <see cref="ModMetadata"/> или null, если возникла ошибка.</returns>
+        private static async Task<ModMetadata?> ParseModAsync(string modName)
         {
             try
             {
-                Mod mod = new() { Name = modName };
-
                 JArray modContents = await GetRepositoryContentsAsync(modName);
+                ModMetadata? mod = await InitializeModMetadata(modName, modContents);
 
-                await ProcessModInfo(mod, modContents);
-                List<string> commonMainModFilesUrls = FindCommonMainModFiles(modContents);
-
-                // Добавляем файлы из корня мода (Main Files of the Mod) в MainFiles мода
-                foreach (string commonFileUrl in commonMainModFilesUrls)
+                if (mod == null)
                 {
-                    string fileName = Path.GetFileName(new Uri(commonFileUrl).LocalPath);
-                    ModFileInfo modMainFileInfo = new()
-                    {
-                        FileName = fileName,
-                        DownloadUrl = commonFileUrl,
-                        IsModMainFile = true, // <-- Помечаем как основной файл мода
-                        FileType = fileName.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase) ? ModFileType.Lyi : ModFileType.Big
-                    };
-
-                    // Обработка LFS для файла из корня мода
-                    await ProcessLfsAsync(modMainFileInfo);
-
-                    mod.MainFiles.Add(modMainFileInfo); // <-- Добавляем в MainFiles мода
+                    return null;
                 }
 
-                await ProcessModVersions(mod, modName, modContents, commonMainModFilesUrls);
+                // Parse common (root-level) .big/.lyi files
+                await ParseCommonModFilesAsync(mod, modContents);
 
-                SetModLatestVersion(mod);
+                // Parse versions (either in /Versions/ or root subdirs)
+                List<ModVersionMetadata> versions = await ParseVersionsAsync(modName, modContents);
+                mod.Versions = versions;
+
+                // Set latest version and last updated
+                if (versions.Count > 0)
+                {
+                    ModVersionMetadata? latest = versions.MaxBy(v => v.ReleaseDate);
+                    if (latest != null)
+                    {
+                        mod.LatestVersion = latest.Version;
+                        mod.LastUpdated = latest.ReleaseDate;
+                    }
+                }
 
                 return mod;
             }
+            catch (HttpRequestException ex)
+            {
+                if (ex.Message.Contains("The SSL connection could not be established"))
+                {
+                    GrowlsManager.ShowErrorMsg("Не удалось установить SSL-соединение.");
+                    Debug.WriteLine("Не удалось установить SSL-соединение.");
+                }
+                else
+                {
+                    throw;
+                }
+
+                return null;
+            }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Ошибка при обработке мода {modName}: {ex.Message} {ex.InnerException}");
+                Debug.WriteLine($"Ошибка при парсинге мода {modName}: {ex}");
                 return null;
             }
         }
 
-        /// <summary>
-        /// Находит URL-адреса общих файлов мода (.big, .lyi) на верхнем уровне каталога мода.
-        /// </summary>
-        /// <param name="modContents">Содержимое каталога мода.</param>
-        /// <returns>Список URL-адресов файлов.</returns>
-        private static List<string> FindCommonMainModFiles(JArray modContents)
-        {
-            List<string> commonMainModFiles = [.. modContents.Where(c =>
-            {
-                string? name = c[GitHubConstants.NameParam]?.ToString();
-                return name != null && (name.EndsWith(".big", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase));
-            }).Select(c => c[GitHubConstants.DownloadUrlParam]?.ToString()).Where(url => !string.IsNullOrEmpty(url)).Cast<string>()];
-
-            return commonMainModFiles;
-        }
-
-        /// <summary>
-        /// Асинхронно обрабатывает файл ModInfo.txt для заполнения базовой информации о моде.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        /// <param name="modContents">Содержимое каталога мода.</param>
-        private static async Task ProcessModInfo(Mod mod, JArray modContents)
+        private static async Task<ModMetadata?> InitializeModMetadata(string modName, JArray modContents)
         {
             JToken? infoFile = FindFileInContents(modContents, GitHubConstants.InfoFileName);
-            if (infoFile != null)
+            if (infoFile == null)
             {
-                string infoContent = await GetFileContentAsync(infoFile?[GitHubConstants.DownloadUrlParam]?.ToString() ?? string.Empty);
-                ParseInfoFile(mod, infoContent);
+                return null; // Optional: still allow mod without ModInfo.txt?
+            }
+
+            string content = await GetFileContentAsync(infoFile[GitHubConstants.DownloadUrlParam]?.ToString() ?? "");
+            ModMetadata mod = new()
+            {
+                Name = modName,
+                MainFiles = [],
+            };
+            await ParseInfoFileAsync(mod, content);
+            return mod;
+        }
+
+        private static async Task ParseCommonModFilesAsync(ModMetadata mod, JArray modContents)
+        {
+            foreach (JToken fileItem in modContents)
+            {
+                if (fileItem[GitHubConstants.TypeParam]?.ToString() != "file")
+                {
+                    continue;
+                }
+
+                string? fileName = fileItem[GitHubConstants.NameParam]?.ToString();
+                string? downloadUrl = fileItem[GitHubConstants.DownloadUrlParam]?.ToString();
+
+                if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(downloadUrl))
+                {
+                    continue;
+                }
+
+                if (!IsGameFile(fileName))
+                {
+                    continue;
+                }
+
+                int size = fileItem[GitHubConstants.SizeParam]?.ToObject<int>() ?? 0;
+                string? sha = await GetFileChecksumAsync(downloadUrl);
+
+                ModFileInfo fileInfo = new()
+                {
+                    FileName = fileName,
+                    DownloadUrl = downloadUrl,
+                    Size = size,
+                    Checksum = sha,
+                    FileType = IsLyiFile(fileName) ? ModFileType.Lyi : ModFileType.Big,
+                    IsCommonFile = true,
+                    IsModMainFile = true,
+                    LastModified = mod.LastUpdated // or DateTime.Now if not yet set
+                };
+
+                await ProcessLfsAsync(fileInfo);
+                mod.MainFiles.Add(fileInfo);
             }
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает версии мода.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        /// <param name="modPath">Путь к каталогу мода.</param>
-        /// <param name="modContents">Содержимое каталога мода.</param>
-        /// <param name="commonMainModFilesUrls">Список URL-адресов общих файлов.</param>
-        private static async Task ProcessModVersions(Mod mod, string modPath, JArray modContents, List<string> commonMainModFilesUrls)
+        private static bool IsGameFile(string fileName)
+        {
+            return fileName.EndsWith(".big", StringComparison.OrdinalIgnoreCase) ||
+            fileName.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsLyiFile(string fileName)
+        {
+            return fileName.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static async Task<List<ModVersionMetadata>> ParseVersionsAsync(string modName, JArray modContents)
         {
             JToken? versionsDir = FindFileInContents(modContents, GitHubConstants.VersionsFolderName);
 
-            if (versionsDir?[GitHubConstants.TypeParam]?.ToString() == "dir")
-            {
-                string versionsPath = $"{modPath}/{GitHubConstants.VersionsFolderName}";
-                JArray versionsContents = await GetRepositoryContentsAsync(versionsPath);
-
-                List<JToken> versionDirectories = [.. versionsContents.Where(c => c[GitHubConstants.TypeParam]?.ToString() == "dir")];
-
-                await ProcessModDirs(mod, versionDirectories, modPath, commonMainModFilesUrls);
-            }
-            else
-            {
-                List<JToken> versionDirectories = [.. modContents.Where(c => c[GitHubConstants.TypeParam]?.ToString() == "dir")];
-
-                await ProcessModDirs(mod, versionDirectories, modPath, commonMainModFilesUrls);
-            }
+            return versionsDir != null && IsDirectory(versionsDir)
+                ? await ParseVersionsFromSubfolderAsync(modName)
+                : await ParseVersionsFromRootAsync(modName, modContents);
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает каталоги версий мода.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        /// <param name="versionDirectories">Список токенов каталогов версий.</param>
-        /// <param name="modPath">Путь к каталогу мода.</param>
-        /// <param name="commonMainModFilesUrls">Список URL-адресов общих файлов.</param>
-        private static async Task ProcessModDirs(Mod mod, List<JToken> versionDirectories, string modPath, List<string> commonMainModFilesUrls)
+        // Вспомогательный метод: проверяет, является ли элемент каталогом
+        private static bool IsDirectory(JToken item)
         {
-            foreach (JToken versionDir in versionDirectories)
+            return item[GitHubConstants.TypeParam]?.ToString() == "dir";
+        }
+
+        // Обработка версий из подпапки /Versions/
+        private static async Task<List<ModVersionMetadata>> ParseVersionsFromSubfolderAsync(string modName)
+        {
+            List<ModVersionMetadata> versions = [];
+            string versionsPath = $"{modName}/{GitHubConstants.VersionsFolderName}";
+            JArray versionsContents = await GetRepositoryContentsAsync(versionsPath);
+
+            foreach (JToken vDir in versionsContents)
             {
-                string? versionName = versionDir[GitHubConstants.NameParam]?.ToString();
-                if (string.IsNullOrEmpty(versionName) || IsNonVersionDirectory(versionName))
+                if (!IsDirectory(vDir))
                 {
-                    continue; // Пропускаем, если имя пустое или это системный каталог
+                    continue;
                 }
 
-                await ProcessSingleVersionAsync(mod, modPath, versionName, commonMainModFilesUrls);
+                string? versionName = vDir[GitHubConstants.NameParam]?.ToString();
+                if (string.IsNullOrWhiteSpace(versionName))
+                {
+                    continue;
+                }
+
+                ModVersionMetadata? versionMetadata = await ParseVersionAsync(
+                    $"{modName}/{GitHubConstants.VersionsFolderName}/{versionName}",
+                    versionName,
+                    []
+                );
+
+                if (versionMetadata != null)
+                {
+                    versions.Add(versionMetadata);
+                }
             }
+
+            return versions;
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает одну версию мода.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        /// <param name="modPath">Путь к каталогу мода.</param>
-        /// <param name="versionName">Имя версии.</param>
-        /// <param name="commonMainModFilesUrls">Список URL-адресов общих файлов.</param>
-        private static async Task ProcessSingleVersionAsync(Mod mod, string modPath, string versionName, List<string> commonMainModFilesUrls)
+        // Обработка версий, лежащих напрямую в корне мода
+        private static async Task<List<ModVersionMetadata>> ParseVersionsFromRootAsync(string modName, JArray modContents)
         {
-            string fullVersionPath = $"{modPath}/{GitHubConstants.VersionsFolderName}/{versionName}";
-            ModVersion version = await ParseVersionAsync(fullVersionPath, versionName, commonMainModFilesUrls);
-            if (version != null)
+            List<ModVersionMetadata> versions = [];
+
+            IEnumerable<string> versionNames = modContents
+                .Where(IsDirectory)
+                .Select(v => v[GitHubConstants.NameParam]?.ToString())
+                .Where(name => !string.IsNullOrWhiteSpace(name) && !IsNonVersionDirectory(name))
+                .Cast<string>();
+
+            foreach (string versionName in versionNames)
             {
-                mod.Versions.Add(version);
-                UpdateModAvailableLanguages(mod, version);
+                ModVersionMetadata? versionMetadata = await ParseVersionAsync(
+                    $"{modName}/{versionName}",
+                    versionName,
+                    []
+                );
+
+                if (versionMetadata != null)
+                {
+                    versions.Add(versionMetadata);
+                }
             }
+
+            return versions;
         }
-        /// <summary>
-        /// Добавляет файлы версии (IsMainFile или IsCommonFile) в список MainFiles мода, избегая дубликатов.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        /// <param name="version">Объект версии, файлы которой нужно добавить.</param>
-        //private static void AddVersionFilesToModMainFiles(Mod mod, ModVersion version)
-        //{
-        //    foreach (var file in version.AllFiles.Values)
-        //    {
-        //        if ((file.IsMainFile || file.IsCommonFile) && !mod.MainFiles.Any(mf => mf.FileName == file.FileName))
-        //        {
-        //            mod.MainFiles.Add(file);
-        //        }
-        //    }
-        //}
 
         /// <summary>
         /// Проверяет, является ли имя каталога системным (не версией).
@@ -298,35 +346,6 @@ namespace Managers.Github
                 GitHubConstants.VersionsFolderName
             };
             return nonVersionDirs.Contains(dirName);
-        }
-
-        /// <summary>
-        /// Обновляет список доступных языков для мода на основе версии.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        /// <param name="version">Объект версии мода.</param>
-        private static void UpdateModAvailableLanguages(Mod mod, ModVersion version)
-        {
-            foreach (string lang in version.AvailableLanguages)
-            {
-                if (!mod.AvailableLanguages.Contains(lang))
-                {
-                    mod.AvailableLanguages.Add(lang);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Устанавливает последнюю версию и дату обновления мода.
-        /// </summary>
-        /// <param name="mod">Объект мода для обновления.</param>
-        private static void SetModLatestVersion(Mod mod)
-        {
-            if (mod.Versions.Count != 0)
-            {
-                mod.LatestVersion = mod.Versions.MaxBy(v => v.VersionNumber)?.VersionNumber;
-                mod.LastUpdated = mod.Versions.Max(v => v.UpdateDate);
-            }
         }
 
         /// <summary>

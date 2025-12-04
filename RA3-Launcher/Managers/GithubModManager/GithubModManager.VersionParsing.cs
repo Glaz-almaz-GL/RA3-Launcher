@@ -1,12 +1,13 @@
 ﻿// Managers.Github/GitHubModManager.VersionParsing.cs
 using Items.Mod;
+using Managers.AvaloniaManagers;
+using Managers.GithubModManager;
 using Newtonsoft.Json.Linq;
-using RA3_Launcher.Managers.GithubModManager;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Managers.Github
@@ -14,187 +15,198 @@ namespace Managers.Github
     public static partial class GitHubModManager
     {
         /// <summary>
-        /// Асинхронно парсит информацию о версии мода.
+        /// Асинхронно парсит одну версию мода и возвращает метаданные версии.
         /// </summary>
-        /// <param name="fullVersionPath">Полный путь к каталогу версии.</param>
-        /// <param name="versionName">Имя версии.</param>
-        /// <param name="commonMainModFilesUrls">Список URL-адресов общих файлов.</param>
-        /// <returns>Объект <see cref="ModVersion"/>.</returns>
-        private static async Task<ModVersion> ParseVersionAsync(string fullVersionPath, string versionName, List<string> commonMainModFilesUrls)
+        /// <param name="fullVersionPath">Полный путь к каталогу версии (например, "ModName/Versions/1.2").</param>
+        /// <param name="versionName">Имя версии (например, "1.2").</param>
+        /// <param name="commonMainModFilesUrls">Список URL общих файлов из корня мода (.big/.lyi).</param>
+        /// <returns>Объект <see cref="ModVersionMetadata"/> или null в случае ошибки.</returns>
+        private static async Task<ModVersionMetadata?> ParseVersionAsync(
+            string fullVersionPath,
+            string versionName,
+            List<string> commonMainModFilesUrls)
         {
-            ModVersion version = new() { VersionNumber = versionName };
+            try
+            {
+                ModVersionMetadata version = new()
+                {
+                    Version = versionName,
+                    Files = [],
+                    SupportedLanguages = []
+                };
 
-            JArray versionContents = await GetRepositoryContentsAsync(fullVersionPath);
+                JArray versionContents = await GetRepositoryContentsAsync(fullVersionPath);
 
+                // Parse VersionInfo.txt if present
+                await ParseAndApplyVersionInfoAsync(version, versionContents);
+
+                // Process top-level files and the Languages/ folder
+                await ProcessVersionContentsAsync(version, fullVersionPath, versionContents);
+
+                // Add common mod files from root (e.g., Mod-Main.lyi)
+                await AddCommonModFilesAsync(version, commonMainModFilesUrls);
+
+                return version;
+            }
+            catch (HttpRequestException ex)
+            {
+                if (ex.Message.Contains("The SSL connection could not be established"))
+                {
+                    GrowlsManager.ShowErrorMsg("Не удалось установить SSL-соединение. Попробуй ещё раз чуть позже.", "Ошибка при получении информации о модификации.");
+                    return null;
+                }
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при парсинге версии {versionName}: {ex}");
+                return null;
+            }
+        }
+
+        private static async Task ParseAndApplyVersionInfoAsync(ModVersionMetadata version, JArray versionContents)
+        {
             JToken? versionInfoFile = FindFileInContents(versionContents, GitHubConstants.VersionInfoFileName);
             if (versionInfoFile != null)
             {
-                string versionInfoContent = await GetFileContentAsync(versionInfoFile[GitHubConstants.DownloadUrlParam]?.ToString() ?? string.Empty);
-                ParseVersionInfoFile(version, versionInfoContent);
+                string url = versionInfoFile[GitHubConstants.DownloadUrlParam]?.ToString() ?? "";
+                string content = await GetFileContentAsync(url);
+                ParseVersionInfoFile(version, content);
             }
-
-            // Обработка всех файлов в версии
-            await ProcessAllFilesInVersion(versionContents, version, fullVersionPath);
-
-            // Добавление общих файлов мода
-            foreach (string commonFileUrl in commonMainModFilesUrls)
-            {
-                string fileName = Path.GetFileName(new Uri(commonFileUrl).LocalPath);
-                ModFileInfo commonFileInfo = new()
-                {
-                    FileName = fileName,
-                    DownloadUrl = commonFileUrl, // Может быть обновлён позже, если это LFS
-                    IsCommonFile = true,
-                    FileType = fileName.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase) ? ModFileType.Lyi : ModFileType.Big
-                };
-
-                // Обработка LFS для общего файла
-                await ProcessLfsAsync(commonFileInfo);
-
-                version.AllFiles[commonFileInfo.FileName] = commonFileInfo;
-            }
-
-            return version;
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает все файлы и подкаталоги в каталоге версии.
-        /// </summary>
-        /// <param name="versionContents">Содержимое каталога версии.</param>
-        /// <param name="version">Объект версии для обновления.</param>
-        /// <param name="fullVersionPath">Полный путь к каталогу версии.</param>
-        private static async Task ProcessAllFilesInVersion(JArray versionContents, ModVersion version, string fullVersionPath)
+        private static async Task ProcessVersionContentsAsync(
+            ModVersionMetadata version,
+            string fullVersionPath,
+            JArray versionContents)
         {
             foreach (JToken item in versionContents)
             {
                 string? itemType = item[GitHubConstants.TypeParam]?.ToString();
                 string? itemName = item[GitHubConstants.NameParam]?.ToString();
 
-                if (itemType == "file" && !string.IsNullOrEmpty(itemName))
+                if (itemType == "file" && !string.IsNullOrWhiteSpace(itemName))
                 {
-                    // Обработка обычного файла
-                    await ProcessFile(item, version);
+                    await ProcessTopLevelFileAsync(version, item);
                 }
-                else if (itemType == "dir" && !string.IsNullOrEmpty(itemName) && itemName.Equals(GitHubConstants.LanguagesFolderName, StringComparison.OrdinalIgnoreCase))
+                else if (itemType == "dir" &&
+                         !string.IsNullOrWhiteSpace(itemName) &&
+                         itemName.Equals(GitHubConstants.LanguagesFolderName, StringComparison.OrdinalIgnoreCase))
                 {
-                    string languagesPath = $"{fullVersionPath}/{GitHubConstants.LanguagesFolderName}";
-                    JArray languagesContents = await GetRepositoryContentsAsync(languagesPath);
-                    await ProcessLanguageFiles(languagesContents, version);
+                    string langPath = $"{fullVersionPath}/{GitHubConstants.LanguagesFolderName}";
+                    await ProcessLanguageFolderAsync(version, langPath);
                 }
             }
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает обычный файл в версии.
-        /// </summary>
-        /// <param name="fileItem">Токен файла.</param>
-        /// <param name="version">Объект версии для обновления.</param>
-        private static async Task ProcessFile(JToken fileItem, ModVersion version)
+        private static async Task ProcessTopLevelFileAsync(ModVersionMetadata version, JToken fileItem)
         {
-            string? fileName = fileItem[GitHubConstants.NameParam]?.ToString();
-            if (string.IsNullOrEmpty(fileName))
-            {
-                return;
-            }
-
             string? downloadUrl = fileItem[GitHubConstants.DownloadUrlParam]?.ToString();
-            if (string.IsNullOrEmpty(downloadUrl))
+            int size = fileItem[GitHubConstants.SizeParam]?.ToObject<int>() ?? 0;
+            string? fileName = fileItem[GitHubConstants.NameParam]?.ToString();
+
+            if (string.IsNullOrWhiteSpace(downloadUrl) || string.IsNullOrWhiteSpace(fileName))
             {
                 return;
             }
 
-            int size = fileItem[GitHubConstants.SizeParam]?.ToObject<int>() ?? 0;
-            string sha = await GetFileChecksumAsync(downloadUrl);
             ModFileType fileType = GetFileType(fileName);
+            if (fileType is not (ModFileType.Big or ModFileType.Lyi))
+            {
+                return;
+            }
 
             ModFileInfo fileInfo = new()
             {
                 FileName = fileName,
-                DownloadUrl = downloadUrl, // Может быть обновлён позже, если это LFS
-                Size = size,               // Может быть обновлён позже, если это LFS
-                Checksum = sha,            // Может быть обновлён позже, если это LFS
+                DownloadUrl = downloadUrl,
+                Size = size,
+                Checksum = await GetFileChecksumAsync(downloadUrl),
                 FileType = fileType,
-                LastModified = version.UpdateDate
+                IsVersionMainFile = true,
+                LastModified = version.ReleaseDate
             };
 
-            // Проверяем, является ли файл основным файлом версии (находится в каталоге версии, не в Languages)
-            // и имеет расширение .big или .lyi
-            if (fileName.EndsWith(".big", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase))
-            {
-                fileInfo.IsVersionMainFile = true; // <-- Помечаем как основной файл версии
-                version.VersionMainFiles.Add(fileInfo); // <-- Добавляем в список основных файлов версии
-            }
-
-            // Проверка и обработка LFS
             await ProcessLfsAsync(fileInfo);
-
-            version.AllFiles[fileInfo.FileName] = fileInfo;
+            version.Files.Add(fileInfo);
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает файлы в подкаталоге Languages.
-        /// </summary>
-        /// <param name="languagesContents">Содержимое каталога Languages.</param>
-        /// <param name="version">Объект версии для обновления.</param>
-        private static async Task ProcessLanguageFiles(JArray languagesContents, ModVersion version)
+        private static async Task ProcessLanguageFolderAsync(ModVersionMetadata version, string langPath)
         {
-            foreach (JToken langFile in languagesContents)
+            JArray langContents = await GetRepositoryContentsAsync(langPath);
+
+            foreach (JToken langFile in langContents)
             {
-                await ProcessLanguageFile(langFile, version);
+                if (langFile[GitHubConstants.TypeParam]?.ToString() != "file")
+                {
+                    continue;
+                }
+
+                string? langFileName = langFile[GitHubConstants.NameParam]?.ToString();
+                string? langDownloadUrl = langFile[GitHubConstants.DownloadUrlParam]?.ToString();
+                int langSize = langFile[GitHubConstants.SizeParam]?.ToObject<int>() ?? 0;
+
+                if (string.IsNullOrWhiteSpace(langFileName) || string.IsNullOrWhiteSpace(langDownloadUrl))
+                {
+                    continue;
+                }
+
+                ModFileType langFileType = GetFileType(langFileName);
+                if (langFileType is not (ModFileType.Big or ModFileType.Lyi))
+                {
+                    continue;
+                }
+
+                string? languageCode = Path.GetFileNameWithoutExtension(langFileName);
+                if (string.IsNullOrWhiteSpace(languageCode))
+                {
+                    continue;
+                }
+
+                ModFileInfo langFileInfo = new()
+                {
+                    FileName = langFileName,
+                    DownloadUrl = langDownloadUrl,
+                    Size = langSize,
+                    Checksum = await GetFileChecksumAsync(langDownloadUrl),
+                    FileType = langFileType,
+                    LanguageCode = languageCode,
+                    IsCommonFile = true,
+                    LastModified = version.ReleaseDate
+                };
+
+                await ProcessLfsAsync(langFileInfo);
+                version.Files.Add(langFileInfo);
+                version.SupportedLanguages.Add(languageCode);
             }
         }
 
-        /// <summary>
-        /// Асинхронно обрабатывает файл локализации.
-        /// </summary>
-        /// <param name="langFile">Токен файла локализации.</param>
-        /// <param name="version">Объект версии для обновления.</param>
-        private static async Task ProcessLanguageFile(JToken langFile, ModVersion version)
+        private static async Task AddCommonModFilesAsync(ModVersionMetadata version, List<string> commonUrls)
         {
-            string? fileName = langFile[GitHubConstants.NameParam]?.ToString();
-            if (string.IsNullOrEmpty(fileName) || (!fileName.EndsWith(".big", StringComparison.OrdinalIgnoreCase) && !fileName.EndsWith(".lyi", StringComparison.OrdinalIgnoreCase)))
+            foreach (string commonUrl in commonUrls)
             {
-                return;
-            }
+                string fileName = Path.GetFileName(new Uri(commonUrl).LocalPath);
+                ModFileType fileType = GetFileType(fileName);
 
-            string? languageName = ExtractLanguageNameFromFileName(fileName);
-            if (string.IsNullOrEmpty(languageName))
-            {
-                return;
-            }
+                if (fileType is not (ModFileType.Big or ModFileType.Lyi))
+                {
+                    continue;
+                }
 
-            string? downloadUrl = langFile[GitHubConstants.DownloadUrlParam]?.ToString();
-            if (string.IsNullOrEmpty(downloadUrl))
-            {
-                return;
-            }
+                ModFileInfo commonFileInfo = new()
+                {
+                    FileName = fileName,
+                    DownloadUrl = commonUrl,
+                    Size = 0, // Size not available here; could be improved by passing it in future
+                    Checksum = await GetFileChecksumAsync(commonUrl),
+                    FileType = fileType,
+                    IsCommonFile = true,
+                    IsModMainFile = true,
+                    LastModified = version.ReleaseDate
+                };
 
-            int size = langFile[GitHubConstants.SizeParam]?.ToObject<int>() ?? 0;
-            string sha = await GetFileChecksumAsync(downloadUrl);
-            ModFileType fileType = GetFileType(fileName);
-
-            ModFileInfo langFileInfo = new()
-            {
-                FileName = fileName,
-                DownloadUrl = downloadUrl, // Может быть обновлён позже, если это LFS
-                Size = size,               // Может быть обновлён позже, если это LFS
-                Checksum = sha,            // Может быть обновлён позже, если это LFS
-                LanguageCode = languageName,
-                FileType = fileType,
-                LastModified = version.UpdateDate
-            };
-
-            // Проверка и обработка LFS для языкового файла
-            await ProcessLfsAsync(langFileInfo);
-
-            // Файлы из Languages теперь помечаются как Common (по новому определению)
-            langFileInfo.IsCommonFile = true; // <-- Помечаем как Common файл (локализация)
-
-            version.AllFiles[langFileInfo.FileName] = langFileInfo;
-
-            if (!version.AvailableLanguages.Contains(languageName))
-            {
-                version.AvailableLanguages.Add(languageName);
+                await ProcessLfsAsync(commonFileInfo);
+                version.Files.Add(commonFileInfo);
             }
         }
 

@@ -1,5 +1,5 @@
-﻿using Items;
-using Managers;
+﻿using Items.Mod;
+using Managers.RAManagers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,11 +7,13 @@ using System.Text.RegularExpressions;
 
 namespace RA3_Launcher.Managers
 {
-    public static partial class ModManager
+    public static partial class InstalledModsManager
     {
-        public static List<ModInfo> GetModsFromDocuments()
+        public static ICollection<InstalledModInfo> InstalledMods => GetModsFromDocuments();
+
+        public static ICollection<InstalledModInfo> GetModsFromDocuments()
         {
-            List<ModInfo> mods = [];
+            ICollection<InstalledModInfo> mods = [];
 
             if (Directory.Exists(FilePaths.ModsDirPath))
             {
@@ -23,15 +25,13 @@ namespace RA3_Launcher.Managers
                     {
                         // Path.GetFileNameWithoutExtension возвращает "RemixEn_0.3.7"
                         (string Name, string Version) = ParseFileName(Path.GetFileNameWithoutExtension(skudefFile));
-                        string modName = Name;
-                        string modVersion = Version;
 
-                        if (string.IsNullOrWhiteSpace(modName) || string.IsNullOrWhiteSpace(modVersion))
+                        if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Version))
                         {
                             continue;
                         }
 
-                        mods.Add(new(modName, modVersion, skudefFile));
+                        mods.Add(new(Name, Version, skudefFile));
                     }
                 }
             }
@@ -57,7 +57,7 @@ namespace RA3_Launcher.Managers
         }
 
         // Паттерн: любые символы (1+), затем _, затем цифры.цифры (1+ раз, может повторяться)
-        [GeneratedRegex(@"^(.+?)_([0-9]+(?:\.[0-9]+)+)$", RegexOptions.IgnoreCase)]
+        [GeneratedRegex(@"^(.+?)[ _]([0-9]+(?:\.[0-9]+)+)$", RegexOptions.IgnoreCase)]
         private static partial Regex ModInfoRegex();
     }
 }

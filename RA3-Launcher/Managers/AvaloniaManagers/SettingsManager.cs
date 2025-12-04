@@ -5,7 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Managers
+namespace Managers.AvaloniaManagers
 {
     public static class SettingsManager
     {
@@ -76,7 +76,7 @@ namespace Managers
             {
                 // Создаём директорию, если она не существует
                 string? directory = Path.GetDirectoryName(SettingsFilePath);
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
                     Debug.WriteLine($"[SettingsManager] Создана директория: {directory}", "Info");

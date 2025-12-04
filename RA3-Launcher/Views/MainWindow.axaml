@@ -16,5 +16,5 @@
 					Stretch="UniformToFill" />
 	</Window.Background>
 
-	<views:MainView />
+	<husk:SkeletonContainer x:Name="MainContent" />
 </husk:AppWindow>

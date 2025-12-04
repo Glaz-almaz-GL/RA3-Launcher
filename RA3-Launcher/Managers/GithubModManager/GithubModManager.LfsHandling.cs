@@ -1,6 +1,6 @@
 ﻿// Managers.Github/GitHubModManager.LfsHandling.cs
 using Items.Mod;
-using RA3_Launcher.Managers.GithubModManager;
+using Managers.GithubModManager;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,11 +21,11 @@ namespace Managers.Github
         private static async Task ProcessLfsAsync(ModFileInfo fileInfo)
         {
             // Получаем *содержимое* файла (а не только информацию из API contents)
-            string fileContent = await GetFileContentAsync(fileInfo.DownloadUrl);
+            string fileContent = await GetFileContentAsync(fileInfo?.DownloadUrl);
 
             if (fileContent.StartsWith(GitHubConstants.LfsVersionLine))
             {
-                Debug.WriteLine($"Файл {fileInfo.FileName} является указателем Git LFS. Получаем реальный URL для скачивания...");
+                Debug.WriteLine($"Файл {fileInfo?.FileName} является указателем Git LFS. Получаем реальный URL для скачивания...");
 
                 // Извлекаем OID и Size из содержимого указателя
                 (string Oid, int Size)? lfsInfo = ParseLfsPointerContent(fileContent);
@@ -34,22 +34,22 @@ namespace Managers.Github
                     // Вызываем LFS API для получения реального URL
                     string? lfsDownloadUrl = await GetLfsDownloadUrlAsync(lfsInfo.Value.Oid, lfsInfo.Value.Size);
 
-                    if (!string.IsNullOrEmpty(lfsDownloadUrl))
+                    if (!string.IsNullOrWhiteSpace(lfsDownloadUrl))
                     {
-                        fileInfo.DownloadUrl = lfsDownloadUrl;
-                        fileInfo.Size = lfsInfo.Value.Size; // Используем размер из указателя LFS
-                        fileInfo.Checksum = lfsInfo.Value.Oid; // Используем OID как Checksum
-                        Debug.WriteLine($"Обновлён URL для LFS файла {fileInfo.FileName}: {lfsDownloadUrl}");
+                        fileInfo?.DownloadUrl = lfsDownloadUrl;
+                        fileInfo?.Size = lfsInfo.Value.Size; // Используем размер из указателя LFS
+                        fileInfo?.Checksum = lfsInfo.Value.Oid; // Используем OID как Checksum
+                        Debug.WriteLine($"Обновлён URL для LFS файла {fileInfo?.FileName}: {lfsDownloadUrl}");
                     }
                     else
                     {
-                        Debug.WriteLine($"Не удалось получить URL для LFS файла {fileInfo.FileName}.");
+                        Debug.WriteLine($"Не удалось получить URL для LFS файла {fileInfo?.FileName}.");
                         // Оставляем fileInfo.DownloadUrl как URL указателя, но помечаем как проблемный, если нужно
                     }
                 }
                 else
                 {
-                    Debug.WriteLine($"Не удалось распознать информацию LFS в файле {fileInfo.FileName}.");
+                    Debug.WriteLine($"Не удалось распознать информацию LFS в файле {fileInfo?.FileName}.");
                 }
             }
         }
@@ -79,7 +79,7 @@ namespace Managers.Github
                 }
             }
 
-            if (!string.IsNullOrEmpty(oid))
+            if (!string.IsNullOrWhiteSpace(oid))
             {
                 Debug.WriteLine($"OID: {oid}; Size: {size}");
                 return (oid, size);
@@ -111,22 +111,22 @@ namespace Managers.Github
         }
         """;
 
-            using var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            using StringContent content = new(jsonRequest, Encoding.UTF8, "application/json");
             // Content-Type уже установлен автоматически
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, batchUrl);
+            using HttpRequestMessage request = new(HttpMethod.Post, batchUrl);
             request.Headers.Add("Accept", "application/vnd.git-lfs+json");
             request.Content = content;
 
             try
             {
-                using var response = await _httpClient.SendAsync(request);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
                 string responseJson = await response.Content.ReadAsStringAsync();
 
                 // Шаг 2: Вызов вспомогательного метода для разбора JSON
-                var downloadResult = ParseLfsDownloadResponse(responseJson);
+                (string href, Dictionary<string, string>? headers)? downloadResult = ParseLfsDownloadResponse(responseJson);
                 if (downloadResult != null)
                 {
                     Debug.WriteLine($"Получена временная ссылка: {downloadResult.Value.href}");
@@ -162,40 +162,40 @@ namespace Managers.Github
         /// <returns>Кортеж href и headers или null.</returns>
         private static (string href, Dictionary<string, string>? headers)? ParseLfsDownloadResponse(string json)
         {
-            using var jsonDoc = JsonDocument.Parse(json);
-            var root = jsonDoc.RootElement;
+            using JsonDocument jsonDoc = JsonDocument.Parse(json);
+            JsonElement root = jsonDoc.RootElement;
 
-            if (!root.TryGetProperty("objects", out var objectsArray) || objectsArray.GetArrayLength() == 0)
+            if (!root.TryGetProperty("objects", out JsonElement objectsArray) || objectsArray.GetArrayLength() == 0)
             {
                 Debug.WriteLine("Ответ LFS не содержит массив 'objects' или он пуст.");
                 return null;
             }
 
-            var firstObject = objectsArray[0];
-            if (!firstObject.TryGetProperty("actions", out var actionsObj) || !actionsObj.TryGetProperty("download", out var downloadAction))
+            JsonElement firstObject = objectsArray[0];
+            if (!firstObject.TryGetProperty("actions", out JsonElement actionsObj) || !actionsObj.TryGetProperty("download", out JsonElement downloadAction))
             {
                 Debug.WriteLine("Поле 'actions' или 'download' не найдено в ответе для объекта.");
                 return null;
             }
 
-            if (!downloadAction.TryGetProperty("href", out var hrefElement))
+            if (!downloadAction.TryGetProperty("href", out JsonElement hrefElement))
             {
                 Debug.WriteLine("Поле 'href' не найдено в действии 'download'.");
                 return null;
             }
 
             string? href = hrefElement.GetString();
-            if (string.IsNullOrEmpty(href))
+            if (string.IsNullOrWhiteSpace(href))
             {
                 Debug.WriteLine("Полученное значение 'href' пусто.");
                 return null;
             }
 
             Dictionary<string, string>? headers = null;
-            if (downloadAction.TryGetProperty("header", out var headerElement))
+            if (downloadAction.TryGetProperty("header", out JsonElement headerElement))
             {
-                headers = new Dictionary<string, string>();
-                foreach (var property in headerElement.EnumerateObject())
+                headers = [];
+                foreach (JsonProperty property in headerElement.EnumerateObject())
                 {
                     headers[property.Name] = property.Value.GetString() ?? string.Empty;
                 }

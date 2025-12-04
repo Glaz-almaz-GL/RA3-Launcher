@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Managers
+namespace Managers.AvaloniaManagers
 {
     public static class DialogsManager
     {
@@ -36,12 +36,12 @@ namespace Managers
                 return null;
             }
 
-            if (string.IsNullOrEmpty(message))
+            if (string.IsNullOrWhiteSpace(message))
             {
                 throw new ArgumentException("Message cannot be null or empty", nameof(message));
             }
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
@@ -70,7 +70,7 @@ namespace Managers
                 return null;
             }
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
@@ -88,7 +88,7 @@ namespace Managers
                 return [];
             }
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
@@ -110,7 +110,7 @@ namespace Managers
                 return null;
             }
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }
@@ -128,7 +128,7 @@ namespace Managers
                 return [];
             }
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException(EmptyTitleMsg, nameof(title));
             }

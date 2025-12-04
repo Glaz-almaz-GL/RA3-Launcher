@@ -1,9 +1,10 @@
-﻿using Microsoft.Win32;
+﻿using Managers.AvaloniaManagers;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Text;
 
-namespace Managers
+namespace Managers.RAManagers
 {
     public static class InstallPatchManager
     {
@@ -27,7 +28,7 @@ namespace Managers
 
                     if (process.ExitCode == 0)
                     {
-                        GrowlsManager.ShowSuccesMsg("4GB Патч применён успешно применен.");
+                        GrowlsManager.ShowSuccessMsg("4GB Патч применён успешно применен.");
                     }
                     else
                     {

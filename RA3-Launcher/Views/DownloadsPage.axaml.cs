@@ -1,35 +1,60 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Huskui.Avalonia.Controls;
 using Items.Mod;
 using RA3_Launcher.Toasts;
+using System.Diagnostics;
 using ViewModels;
 
 namespace RA3_Launcher.Views;
 
 public partial class DownloadsPage : UserControl
 {
-    private DownloadViewModel _viewModel = new();
+    public readonly DownloadViewModel ViewModel = new();
+    private bool _hasLoaded = false;
 
     public DownloadsPage()
     {
         InitializeComponent();
-        DataContext = _viewModel;
-        _ = _viewModel.LoadModsAsync();
+        DataContext = ViewModel;
+        Loaded += LoadIfNeeded;
     }
 
-    private AppWindow? GetAppWindow() => TopLevel.GetTopLevel(this) as AppWindow;
+    public void LoadIfNeeded(object? sender, RoutedEventArgs e)
+    {
+        if (!_hasLoaded)
+        {
+            _ = ViewModel.LoadModsAsync();
+            _hasLoaded = true;
+        }
+    }
+
+    private AppWindow? GetAppWindow()
+    {
+        return TopLevel.GetTopLevel(this) as AppWindow;
+    }
+
+    private void InteractiveElement_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        Debug.WriteLine("IGNORE CLICK");
+        e.Handled = true;
+    }
 
     private void ModInfo_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         // Получаем Mod из DataContext кликнутого элемента
-        if (sender is Control control && control.DataContext is Mod mod)
+        if (sender is Control control && control.DataContext is ModViewModel mod)
         {
-            var appWindow = GetAppWindow();
-            if (appWindow == null) return;
-
-            var toast = new ModInfoToast
+            AppWindow? appWindow = GetAppWindow();
+            if (appWindow == null)
             {
-                Mod = mod // ← Устанавливаем свойство Mod
+                return;
+            }
+
+            ModInfoToast toast = new()
+            {
+                Mod = mod.Metadata
             };
 
             appWindow.PopToast(toast);
